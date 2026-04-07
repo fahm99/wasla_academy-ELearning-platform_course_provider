@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
 import '../theme/Theme.dart';
 import '../widgets/index.dart';
-import '../models/index.dart';
+import '../data/models/index.dart';
 import '../utils/app_icons.dart';
 import 'course_content_management_screen.dart';
 import 'course_students_screen.dart';

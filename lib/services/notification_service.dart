@@ -1,5 +1,5 @@
 import 'supabase_service.dart';
-import '../models/notification.dart';
+import '../data/models/notification.dart';
 import '../config/supabase_config.dart';
 
 /// خدمة إدارة الإشعارات

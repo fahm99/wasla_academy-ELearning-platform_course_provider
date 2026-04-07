@@ -1,5 +1,5 @@
 import 'supabase_service.dart';
-import '../models/certificate.dart';
+import '../data/models/certificate.dart';
 import '../config/supabase_config.dart';
 
 /// خدمة إدارة الشهادات

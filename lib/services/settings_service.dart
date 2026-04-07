@@ -1,5 +1,5 @@
 import 'supabase_service.dart';
-import '../models/app_settings.dart';
+import '../data/models/app_settings.dart';
 import '../config/supabase_config.dart';
 
 /// خدمة إدارة الإعدادات

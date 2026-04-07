@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../repository/main_repository.dart';
-import '../../models/index.dart';
+import '../../data/models/index.dart';
 import 'student_event.dart';
 import 'student_state.dart';
 

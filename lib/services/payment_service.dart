@@ -1,5 +1,5 @@
 import 'supabase_service.dart';
-import '../models/payment.dart';
+import '../data/models/payment.dart';
 import '../config/supabase_config.dart';
 
 /// خدمة إدارة المدفوعات

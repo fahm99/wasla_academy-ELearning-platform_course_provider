@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/Theme.dart';
-import '../models/index.dart';
+import '../data/models/index.dart';
 
 class SettingItem extends StatelessWidget {
   final IconData icon;

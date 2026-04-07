@@ -1,6 +1,6 @@
+import 'package:course_provider/features/auth/data/validators/auth_validators.dart';
+import 'package:course_provider/repository/main_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../repository/main_repository.dart';
-import '../../features/auth/data/validators/auth_validators.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 

@@ -1,5 +1,5 @@
 import 'supabase_service.dart';
-import '../models/course.dart';
+import '../data/models/course.dart';
 import '../config/supabase_config.dart';
 
 /// خدمة إدارة الكورسات

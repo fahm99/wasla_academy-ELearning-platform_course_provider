@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
 import '../theme/Theme.dart';
 import '../widgets/index.dart';
-import '../models/index.dart';
+import '../data/models/index.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});

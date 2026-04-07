@@ -4,7 +4,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../bloc/bloc.dart';
 import '../theme/Theme.dart';
 import '../widgets/certificate_template_widget.dart';
-import '../models/index.dart';
+import '../data/models/index.dart';
 import '../utils/app_icons.dart';
 
 // نموذج قالب الشهادة

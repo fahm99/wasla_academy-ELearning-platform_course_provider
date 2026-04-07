@@ -1,5 +1,5 @@
+import 'package:course_provider/features/auth/presentation/screens/auth_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:course_provider/screens/Auth.dart';
 import 'package:course_provider/screens/MainScreen.dart';
 
 /// مساعد التنقل المبسط

@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'supabase_service.dart';
-import '../models/user.dart';
+import '../data/models/user.dart';
 import '../config/supabase_config.dart';
 
 /// خدمة المصادقة

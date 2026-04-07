@@ -1,3 +1,4 @@
+import 'package:course_provider/features/auth/presentation/screens/auth_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -6,9 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'theme/Theme.dart';
 import 'repository/main_repository.dart';
 import 'bloc/bloc.dart';
-import 'screens/Auth.dart';
 import 'screens/MainScreen.dart';
 import 'services/supabase_service.dart';
+import 'routing/Routing.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +46,6 @@ class WaslaApp extends StatelessWidget {
               repository: context.read<MainRepository>(),
             ),
           ),
-          // Removed StudentBloc provider
           BlocProvider<CertificateBloc>(
             create: (context) => CertificateBloc(
               repository: context.read<MainRepository>(),
@@ -67,7 +67,7 @@ class WaslaApp extends StatelessWidget {
                   : AppTheme.lightTheme;
             }
 
-            return MaterialApp(
+            return MaterialApp.router(
               title: 'وصلة - منصة مقدمي الخدمات التعليمية',
               theme: theme.copyWith(
                 textTheme: GoogleFonts.cairoTextTheme(theme.textTheme),
@@ -83,164 +83,15 @@ class WaslaApp extends StatelessWidget {
                 GlobalWidgetsLocalizations.delegate,
                 GlobalCupertinoLocalizations.delegate,
               ],
+              routerConfig: AppRouter.router,
               builder: (context, child) {
                 return Directionality(
                   textDirection: TextDirection.rtl,
                   child: child!,
                 );
               },
-              home: const SplashScreen(),
-              routes: {
-                '/auth': (context) => const AuthScreen(),
-                '/main': (context) => const MainScreen(),
-              },
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-// شاشة البداية (Splash Screen)
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _animationController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
-
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeIn,
-    ));
-
-    _animationController.forward();
-
-    // تحميل الإعدادات والتحقق من حالة المصادقة
-    _initializeApp();
-  }
-
-  Future<void> _initializeApp() async {
-    // تحميل الإعدادات
-    context.read<SettingsBloc>().add(SettingsLoadRequested());
-
-    // التحقق من حالة المصادقة
-    context.read<AuthBloc>().add(AuthCheckStatus());
-
-    // انتظار لمدة ثانيتين لعرض شاشة البداية
-    await Future.delayed(const Duration(seconds: 2));
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is AuthAuthenticated) {
-          Navigator.pushReplacementNamed(context, '/main');
-        } else if (state is AuthUnauthenticated) {
-          Navigator.pushReplacementNamed(context, '/auth');
-        }
-      },
-      child: Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: AppTheme.primaryGradient,
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedBuilder(
-                  animation: _animationController,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: Container(
-                          width: 150,
-                          height: 150,
-                          decoration: BoxDecoration(
-                            color: AppTheme.white,
-                            borderRadius: BorderRadius.circular(75),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.school,
-                            size: 80,
-                            color: AppTheme.darkBlue,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 30),
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: const Text(
-                    'وصلة',
-                    style: AppTheme.splashTitle,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: const Text(
-                    'منصة مقدمي الخدمات التعليمية',
-                    style: AppTheme.splashSubtitle,
-                  ),
-                ),
-                const SizedBox(height: 50),
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.yellow),
-                    strokeWidth: 3,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

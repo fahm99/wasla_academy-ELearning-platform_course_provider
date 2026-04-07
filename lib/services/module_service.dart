@@ -1,5 +1,5 @@
 import 'supabase_service.dart';
-import '../models/module.dart';
+import '../data/models/module.dart';
 import '../config/supabase_config.dart';
 
 /// خدمة إدارة الوحدات

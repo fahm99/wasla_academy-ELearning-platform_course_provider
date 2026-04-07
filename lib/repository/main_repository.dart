@@ -1,5 +1,5 @@
 import '../services/index.dart';
-import '../models/index.dart';
+import '../data/models/index.dart';
 
 /// Repository الرئيسي للتعامل مع Supabase
 class MainRepository {

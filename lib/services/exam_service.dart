@@ -1,5 +1,5 @@
 import 'supabase_service.dart';
-import '../models/exam.dart';
+import '../data/models/exam.dart';
 import '../config/supabase_config.dart';
 
 /// خدمة إدارة الامتحانات

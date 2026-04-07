@@ -1,6 +1,6 @@
 import 'supabase_service.dart';
-import '../models/lesson.dart';
-import '../models/lesson_resource.dart';
+import '../data/models/lesson.dart';
+import '../data/models/lesson_resource.dart';
 import '../config/supabase_config.dart';
 
 /// خدمة إدارة الدروس

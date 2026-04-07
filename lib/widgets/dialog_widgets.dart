@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/index.dart';
+import '../data/models/index.dart';
 
 class SortOption {
   final String value;

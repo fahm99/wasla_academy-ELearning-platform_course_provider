@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/index.dart';
+import '../data/models/index.dart';
 import '../theme/Theme.dart';
 import '../utils/app_icons.dart';
 
