@@ -21,22 +21,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.lightGray,
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.paddingLarge),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStatisticsCards(),
-              const SizedBox(height: AppTheme.paddingLarge),
-              _buildQuickActions(),
-              const SizedBox(height: AppTheme.paddingLarge),
-              _buildNotifications(),
-            ],
-          ),
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppTheme.paddingLarge),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStatisticsCards(),
+            const SizedBox(height: AppTheme.paddingLarge),
+            _buildQuickActions(),
+            const SizedBox(height: AppTheme.paddingLarge),
+            _buildNotifications(),
+          ],
         ),
       ),
     );
