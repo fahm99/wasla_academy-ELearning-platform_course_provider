@@ -23,19 +23,49 @@ class MainRepository {
     return await _authService.login(email: email, password: password);
   }
 
+  Future<Map<String, dynamic>> loginWithResult(
+      String email, String password) async {
+    return await _authService.loginWithResult(email: email, password: password);
+  }
+
   Future<bool> register(
     String name,
     String email,
     String password,
-    String phone,
-  ) async {
+    String phone, {
+    String userType = 'provider',
+  }) async {
     return await _authService.register(
       email: email,
       password: password,
       name: name,
       phone: phone,
-      userType: 'provider',
+      userType: userType,
     );
+  }
+
+  Future<Map<String, dynamic>> registerWithResult(
+    String name,
+    String email,
+    String password,
+    String phone, {
+    String userType = 'provider',
+  }) async {
+    return await _authService.registerWithResult(
+      email: email,
+      password: password,
+      name: name,
+      phone: phone,
+      userType: userType,
+    );
+  }
+
+  Future<Map<String, dynamic>> sendPasswordResetEmail(String email) async {
+    return await _authService.sendPasswordResetEmail(email);
+  }
+
+  Future<Map<String, dynamic>> updatePassword(String newPassword) async {
+    return await _authService.updatePassword(newPassword);
   }
 
   Future<void> logout() async {

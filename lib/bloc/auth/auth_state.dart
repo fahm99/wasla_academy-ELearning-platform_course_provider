@@ -42,3 +42,12 @@ class AuthPasswordResetSent extends AuthState {
 }
 
 class AuthPasswordResetSuccess extends AuthState {}
+
+class AuthRegistrationSuccess extends AuthState {
+  final String message;
+
+  const AuthRegistrationSuccess({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}

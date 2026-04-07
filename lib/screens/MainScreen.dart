@@ -109,51 +109,58 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     // Check if we should show the sidebar (tablet mode or sidebar is open)
     final showSidebar = isTablet || _isSidebarOpen || showSidebarPermanently;
 
-    return PopScope(
-      canPop: true,
-      onPopInvoked: (didPop) {
-        if (didPop) return;
-        // إذا لم نكن في التبويب الأول، انتقل إليه
-        if (_currentIndex != 0) {
-          _navigateToTab(0);
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthUnauthenticated) {
+          NavigationHelper.goToAuth(context);
         }
       },
-      child: Scaffold(
-        key: _scaffoldKey,
-        appBar: _buildAppBar(),
-        // Remove the endDrawer since we're implementing our own sidebar
-        body: GestureDetector(
-          onHorizontalDragStart: _onHorizontalDragStart,
-          onHorizontalDragUpdate: _onHorizontalDragUpdate,
-          onHorizontalDragEnd: _onHorizontalDragEnd,
-          child: Stack(
-            children: [
-              // Main content
-              _buildMainContent(),
-              // Sidebar overlay for mobile (slides in from right)
-              if (showSidebar && !_isTabletMode && !showSidebarPermanently)
-                SlideTransition(
-                  position: _sidebarOffsetAnimation,
-                  child: _buildSidebar(),
-                ),
-              // Sidebar for tablet mode (always visible on the left)
-              if ((_isTabletMode || showSidebarPermanently) &&
-                  screenWidth >= 768)
-                Positioned.directional(
-                  textDirection: TextDirection.rtl,
-                  start: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: _buildSidebar(),
-                ),
-            ],
+      child: PopScope(
+        canPop: true,
+        onPopInvoked: (didPop) {
+          if (didPop) return;
+          // إذا لم نكن في التبويب الأول، انتقل إليه
+          if (_currentIndex != 0) {
+            _navigateToTab(0);
+          }
+        },
+        child: Scaffold(
+          key: _scaffoldKey,
+          appBar: _buildAppBar(),
+          // Remove the endDrawer since we're implementing our own sidebar
+          body: GestureDetector(
+            onHorizontalDragStart: _onHorizontalDragStart,
+            onHorizontalDragUpdate: _onHorizontalDragUpdate,
+            onHorizontalDragEnd: _onHorizontalDragEnd,
+            child: Stack(
+              children: [
+                // Main content
+                _buildMainContent(),
+                // Sidebar overlay for mobile (slides in from right)
+                if (showSidebar && !_isTabletMode && !showSidebarPermanently)
+                  SlideTransition(
+                    position: _sidebarOffsetAnimation,
+                    child: _buildSidebar(),
+                  ),
+                // Sidebar for tablet mode (always visible on the left)
+                if ((_isTabletMode || showSidebarPermanently) &&
+                    screenWidth >= 768)
+                  Positioned.directional(
+                    textDirection: TextDirection.rtl,
+                    start: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: _buildSidebar(),
+                  ),
+              ],
+            ),
           ),
+          // Show bottom navigation only on mobile devices
+          bottomNavigationBar:
+              (isDesktop && isWebOrDesktop) ? null : _buildBottomNavigation(),
         ),
-        // Show bottom navigation only on mobile devices
-        bottomNavigationBar:
-            (isDesktop && isWebOrDesktop) ? null : _buildBottomNavigation(),
-      ),
-    );
+      ), // PopScope
+    ); // BlocListener
   }
 
   AppBar _buildAppBar() {

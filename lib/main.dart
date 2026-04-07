@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'theme/Theme.dart';
 import 'repository/main_repository.dart';
@@ -68,7 +69,9 @@ class WaslaApp extends StatelessWidget {
 
             return MaterialApp(
               title: 'وصلة - منصة مقدمي الخدمات التعليمية',
-              theme: theme,
+              theme: theme.copyWith(
+                textTheme: GoogleFonts.cairoTextTheme(theme.textTheme),
+              ),
               debugShowCheckedModeBanner: false,
               locale: const Locale('ar', 'SA'),
               supportedLocales: const [
@@ -148,8 +151,11 @@ class _SplashScreenState extends State<SplashScreen>
     // تحميل الإعدادات
     context.read<SettingsBloc>().add(SettingsLoadRequested());
 
+    // التحقق من حالة المصادقة
+    context.read<AuthBloc>().add(AuthCheckStatus());
+
     // انتظار لمدة ثانيتين لعرض شاشة البداية
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.delayed(const Duration(seconds: 2));
   }
 
   @override

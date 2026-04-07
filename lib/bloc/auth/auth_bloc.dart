@@ -21,7 +21,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       emit(AuthLoading());
-
       final isLoggedIn = await repository.isLoggedIn();
       if (isLoggedIn) {
         final user = await repository.getUser();
@@ -34,7 +33,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthUnauthenticated());
       }
     } catch (e) {
-      emit(const AuthError(message: 'حدث خطأ في التحقق من حالة المصادقة'));
+      emit(AuthUnauthenticated());
     }
   }
 
@@ -45,7 +44,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(AuthLoading());
 
-      // التحقق من صحة البيانات
       if (event.email.isEmpty || event.password.isEmpty) {
         emit(const AuthError(
             message: 'يرجى إدخال البريد الإلكتروني وكلمة المرور'));
@@ -63,21 +61,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      final success = await repository.login(event.email, event.password);
+      final result =
+          await repository.loginWithResult(event.email, event.password);
 
-      if (success) {
+      if (result['success'] == true) {
         final user = await repository.getUser();
         if (user != null) {
           emit(AuthAuthenticated(user: user));
         } else {
-          emit(const AuthError(message: 'حدث خطأ في تسجيل الدخول'));
+          emit(const AuthError(message: 'حدث خطأ في جلب بيانات المستخدم'));
         }
       } else {
-        emit(const AuthError(
-            message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة'));
+        emit(AuthError(
+            message: result['message'] as String? ??
+                'البريد الإلكتروني أو كلمة المرور غير صحيحة'));
       }
     } catch (e) {
-      emit(const AuthError(message: 'حدث خطأ في تسجيل الدخول'));
+      emit(const AuthError(message: 'حدث خطأ غير متوقع في تسجيل الدخول'));
     }
   }
 
@@ -88,7 +88,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(AuthLoading());
 
-      // التحقق من صحة البيانات
       if (event.name.isEmpty ||
           event.email.isEmpty ||
           event.password.isEmpty ||
@@ -109,29 +108,43 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
 
       if (!_isValidPhone(event.phone)) {
-        emit(const AuthError(message: 'يرجى إدخال رقم هاتف صحيح'));
+        emit(const AuthError(
+            message: 'يرجى إدخال رقم هاتف صحيح (+966xxxxxxxxx)'));
         return;
       }
 
-      final success = await repository.register(
+      final result = await repository.registerWithResult(
         event.name,
         event.email,
         event.password,
         event.phone,
+        userType: event.userType,
       );
 
-      if (success) {
-        final user = await repository.getUser();
-        if (user != null) {
-          emit(AuthAuthenticated(user: user));
+      if (result['success'] == true) {
+        // بعد التسجيل، نحاول تسجيل الدخول تلقائياً
+        final loginResult =
+            await repository.loginWithResult(event.email, event.password);
+        if (loginResult['success'] == true) {
+          final user = await repository.getUser();
+          if (user != null) {
+            emit(AuthAuthenticated(user: user));
+          } else {
+            // الحساب تم إنشاؤه لكن يحتاج تأكيد البريد
+            emit(AuthRegistrationSuccess(
+                message: 'تم إنشاء الحساب بنجاح. يرجى تأكيد بريدك الإلكتروني'));
+          }
         } else {
-          emit(const AuthError(message: 'حدث خطأ في إنشاء الحساب'));
+          // تم إنشاء الحساب لكن يحتاج تأكيد البريد الإلكتروني
+          emit(AuthRegistrationSuccess(
+              message: 'تم إنشاء الحساب بنجاح. يرجى تأكيد بريدك الإلكتروني'));
         }
       } else {
-        emit(const AuthError(message: 'فشل في إنشاء الحساب'));
+        emit(AuthError(
+            message: result['message'] as String? ?? 'فشل في إنشاء الحساب'));
       }
     } catch (e) {
-      emit(const AuthError(message: 'حدث خطأ في إنشاء الحساب'));
+      emit(const AuthError(message: 'حدث خطأ غير متوقع في إنشاء الحساب'));
     }
   }
 
@@ -160,8 +173,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      // إرسال رابط إعادة تعيين كلمة المرور عبر Supabase
-      emit(AuthPasswordResetSent(email: event.email));
+      final result = await repository.sendPasswordResetEmail(event.email);
+
+      if (result['success'] == true) {
+        emit(AuthPasswordResetSent(email: event.email));
+      } else {
+        emit(AuthError(
+            message: result['message'] as String? ??
+                'حدث خطأ في إرسال رابط إعادة التعيين'));
+      }
     } catch (e) {
       emit(const AuthError(
           message: 'حدث خطأ في إرسال رابط إعادة تعيين كلمة المرور'));
@@ -181,8 +201,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      // إعادة تعيين كلمة المرور عبر Supabase
-      emit(AuthPasswordResetSuccess());
+      final result = await repository.updatePassword(event.newPassword);
+
+      if (result['success'] == true) {
+        emit(AuthPasswordResetSuccess());
+      } else {
+        emit(AuthError(
+            message: result['message'] as String? ??
+                'حدث خطأ في إعادة تعيين كلمة المرور'));
+      }
     } catch (e) {
       emit(const AuthError(message: 'حدث خطأ في إعادة تعيين كلمة المرور'));
     }

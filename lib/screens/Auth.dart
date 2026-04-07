@@ -85,10 +85,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                         _buildTabBar(),
                         const SizedBox(height: AppTheme.paddingLarge),
                         _buildTabBarView(),
-                        const SizedBox(height: AppTheme.paddingMedium),
-                        _buildSocialLogin(),
-                        const SizedBox(height: AppTheme.paddingMedium),
-                        _buildFooter(),
                       ],
                     ),
                   ),
@@ -190,8 +186,14 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
             ),
           );
         } else if (state is AuthAuthenticated) {
-          // Use the new navigation helper
           NavigationHelper.goToMain(context);
+        } else if (state is AuthPasswordResetSent) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم إرسال رابط إعادة التعيين إلى ${state.email}'),
+              backgroundColor: Colors.green,
+            ),
+          );
         }
       },
       builder: (context, state) {
@@ -304,8 +306,17 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
             ),
           );
         } else if (state is AuthAuthenticated) {
-          // Use the new navigation helper
           NavigationHelper.goToMain(context);
+        } else if (state is AuthRegistrationSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          // الانتقال إلى تبويب تسجيل الدخول
+          _tabController.animateTo(0);
         }
       },
       builder: (context, state) {
@@ -503,90 +514,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildSocialLogin() {
-    return Column(
-      children: [
-        const Row(
-          children: [
-            Expanded(child: Divider(color: AppTheme.mediumGray)),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppTheme.paddingMedium),
-              child: Text(
-                'أو',
-                style: TextStyle(
-                  color: AppTheme.darkGray,
-                  fontSize: 14,
-                  fontFamily: 'Cairo',
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: AppTheme.mediumGray)),
-          ],
-        ),
-        const SizedBox(height: AppTheme.paddingMedium),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildSocialButton(
-              icon: Icons.g_mobiledata,
-              color: Colors.red,
-              onPressed: () {
-                // تسجيل الدخول بـ Google
-              },
-            ),
-            const SizedBox(width: AppTheme.paddingMedium),
-            _buildSocialButton(
-              icon: Icons.apple,
-              color: Colors.black,
-              onPressed: () {
-                // تسجيل الدخول بـ Apple
-              },
-            ),
-            const SizedBox(width: AppTheme.paddingMedium),
-            _buildSocialButton(
-              icon: Icons.window,
-              color: Colors.blue,
-              onPressed: () {
-                // تسجيل الدخول بـ Microsoft
-              },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSocialButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        border: Border.all(color: AppTheme.mediumGray),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: color, size: 20),
-        onPressed: onPressed,
-      ),
-    );
-  }
-
-  Widget _buildFooter() {
-    return const Text(
-      'جميع الحقوق محفوظة © 2024 وصلة',
-      style: TextStyle(
-        color: AppTheme.darkGray,
-        fontSize: 12,
-        fontFamily: 'Cairo',
-      ),
-      textAlign: TextAlign.center,
-    );
-  }
-
   void _handleLogin() {
     if (_loginFormKey.currentState!.validate()) {
       context.read<AuthBloc>().add(
@@ -606,50 +533,91 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
               email: _registerEmailController.text.trim(),
               password: _registerPasswordController.text,
               phone: _registerPhoneController.text.trim(),
+              userType: 'provider',
             ),
           );
     }
   }
 
   void _showForgotPasswordDialog() {
+    _forgotEmailController.clear();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('نسيان كلمة المرور'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور',
-            ),
-            const SizedBox(height: AppTheme.paddingMedium),
-            CustomTextField(
-              controller: _forgotEmailController,
-              label: 'البريد الإلكتروني',
-              hint: 'أدخل بريدك الإلكتروني',
-              prefixIcon: Icons.email_outlined,
-              keyboardType: TextInputType.emailAddress,
-            ),
-          ],
+      builder: (dialogContext) => BlocProvider.value(
+        value: context.read<AuthBloc>(),
+        child: BlocConsumer<AuthBloc, AuthState>(
+          listener: (ctx, state) {
+            if (state is AuthPasswordResetSent) {
+              Navigator.of(dialogContext).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content:
+                      Text('تم إرسال رابط إعادة التعيين إلى ${state.email}'),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            } else if (state is AuthError) {
+              Navigator.of(dialogContext).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppTheme.red,
+                ),
+              );
+            }
+          },
+          builder: (ctx, state) {
+            final isLoading = state is AuthLoading;
+            return AlertDialog(
+              title: const Text('نسيان كلمة المرور'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور',
+                  ),
+                  const SizedBox(height: AppTheme.paddingMedium),
+                  CustomTextField(
+                    controller: _forgotEmailController,
+                    label: 'البريد الإلكتروني',
+                    hint: 'أدخل بريدك الإلكتروني',
+                    prefixIcon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('إلغاء'),
+                ),
+                ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          if (_forgotEmailController.text.isNotEmpty) {
+                            ctx.read<AuthBloc>().add(
+                                  AuthForgotPassword(
+                                      email:
+                                          _forgotEmailController.text.trim()),
+                                );
+                          }
+                        },
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('إرسال'),
+                ),
+              ],
+            );
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (_forgotEmailController.text.isNotEmpty) {
-                context.read<AuthBloc>().add(
-                      AuthForgotPassword(
-                          email: _forgotEmailController.text.trim()),
-                    );
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('إرسال'),
-          ),
-        ],
       ),
     );
   }
