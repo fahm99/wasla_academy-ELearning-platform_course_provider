@@ -508,11 +508,8 @@ class _CourseScreenState extends State<CourseScreen> {
       level: CourseLevel.values
           .firstWhere((e) => e.toString().split('.').last == level),
       status: CourseStatus.draft,
-      isFree: true,
       providerId: 'current_user_id',
-      providerName: 'Current User',
       price: 0.0,
-      duration: 0,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

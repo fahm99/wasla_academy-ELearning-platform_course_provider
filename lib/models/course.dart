@@ -1,51 +1,44 @@
 import 'package:equatable/equatable.dart';
-import 'lesson.dart';
 
 class Course extends Equatable {
   final String id;
   final String title;
   final String description;
-  final String? image;
-  final String? imageUrl;
   final String providerId;
-  final String providerName;
+  final String? category;
+  final CourseLevel? level;
   final double price;
-  final bool isFree;
+  final String currency;
+  final int? durationHours;
+  final String? thumbnailUrl;
+  final String? coverImageUrl;
   final CourseStatus status;
-  final CourseLevel level;
-  final String category;
-  final List<String> tags;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final DateTime? publishedAt;
-  final int duration; // بالدقائق
   final int studentsCount;
   final double rating;
   final int reviewsCount;
-  final List<Lesson> lessons;
+  final bool isFeatured;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   const Course({
     required this.id,
     required this.title,
     required this.description,
-    this.image,
-    this.imageUrl,
     required this.providerId,
-    required this.providerName,
-    required this.price,
-    this.isFree = false,
+    this.category,
+    this.level,
+    this.price = 0,
+    this.currency = 'SAR',
+    this.durationHours,
+    this.thumbnailUrl,
+    this.coverImageUrl,
     this.status = CourseStatus.draft,
-    required this.level,
-    required this.category,
-    this.tags = const [],
-    required this.createdAt,
-    required this.updatedAt,
-    this.publishedAt,
-    required this.duration,
     this.studentsCount = 0,
     this.rating = 0.0,
     this.reviewsCount = 0,
-    this.lessons = const [],
+    this.isFeatured = false,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   @override
@@ -53,71 +46,62 @@ class Course extends Equatable {
         id,
         title,
         description,
-        image,
-        imageUrl,
         providerId,
-        providerName,
-        price,
-        isFree,
-        status,
-        level,
         category,
-        tags,
-        createdAt,
-        updatedAt,
-        publishedAt,
-        duration,
+        level,
+        price,
+        currency,
+        durationHours,
+        thumbnailUrl,
+        coverImageUrl,
+        status,
         studentsCount,
         rating,
         reviewsCount,
-        lessons
+        isFeatured,
+        createdAt,
+        updatedAt,
       ];
 
   Course copyWith({
     String? id,
     String? title,
     String? description,
-    String? image,
-    String? imageUrl,
     String? providerId,
-    String? providerName,
-    double? price,
-    bool? isFree,
-    CourseStatus? status,
-    CourseLevel? level,
     String? category,
-    List<String>? tags,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    DateTime? publishedAt,
-    int? duration,
+    CourseLevel? level,
+    double? price,
+    String? currency,
+    int? durationHours,
+    String? thumbnailUrl,
+    String? coverImageUrl,
+    CourseStatus? status,
     int? studentsCount,
     double? rating,
     int? reviewsCount,
-    List<Lesson>? lessons,
+    bool? isFeatured,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Course(
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      image: image ?? this.image,
-      imageUrl: imageUrl ?? this.imageUrl,
       providerId: providerId ?? this.providerId,
-      providerName: providerName ?? this.providerName,
-      price: price ?? this.price,
-      isFree: isFree ?? this.isFree,
-      status: status ?? this.status,
-      level: level ?? this.level,
       category: category ?? this.category,
-      tags: tags ?? this.tags,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      publishedAt: publishedAt ?? this.publishedAt,
-      duration: duration ?? this.duration,
+      level: level ?? this.level,
+      price: price ?? this.price,
+      currency: currency ?? this.currency,
+      durationHours: durationHours ?? this.durationHours,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      coverImageUrl: coverImageUrl ?? this.coverImageUrl,
+      status: status ?? this.status,
       studentsCount: studentsCount ?? this.studentsCount,
       rating: rating ?? this.rating,
       reviewsCount: reviewsCount ?? this.reviewsCount,
-      lessons: lessons ?? this.lessons,
+      isFeatured: isFeatured ?? this.isFeatured,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -126,58 +110,58 @@ class Course extends Equatable {
       'id': id,
       'title': title,
       'description': description,
-      'image': image,
-      'imageUrl': imageUrl,
-      'providerId': providerId,
-      'providerName': providerName,
-      'price': price,
-      'isFree': isFree,
-      'status': status.name,
-      'level': level.name,
+      'provider_id': providerId,
       'category': category,
-      'tags': tags,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-      'publishedAt': publishedAt?.toIso8601String(),
-      'duration': duration,
-      'studentsCount': studentsCount,
+      'level': level?.name,
+      'price': price,
+      'currency': currency,
+      'duration_hours': durationHours,
+      'thumbnail_url': thumbnailUrl,
+      'cover_image_url': coverImageUrl,
+      'status': status.name,
+      'students_count': studentsCount,
       'rating': rating,
-      'reviewsCount': reviewsCount,
-      'lessons': lessons.map((l) => l.toJson()).toList(),
+      'reviews_count': reviewsCount,
+      'is_featured': isFeatured,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      image: json['image'],
-      imageUrl: json['imageUrl'],
-      providerId: json['providerId'],
-      providerName: json['providerName'],
-      price: json['price']?.toDouble() ?? 0.0,
-      isFree: json['isFree'] ?? false,
-      status: CourseStatus.values.firstWhere((e) => e.name == json['status']),
-      level: CourseLevel.values.firstWhere((e) => e.name == json['level']),
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      providerId: json['provider_id'] ?? '',
       category: json['category'],
-      tags: List<String>.from(json['tags'] ?? []),
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
-      publishedAt: json['publishedAt'] != null
-          ? DateTime.parse(json['publishedAt'])
+      level: json['level'] != null
+          ? CourseLevel.values.firstWhere(
+              (e) => e.name == json['level'],
+              orElse: () => CourseLevel.beginner,
+            )
           : null,
-      duration: json['duration'] ?? 0,
-      studentsCount: json['studentsCount'] ?? 0,
-      rating: json['rating']?.toDouble() ?? 0.0,
-      reviewsCount: json['reviewsCount'] ?? 0,
-      lessons:
-          (json['lessons'] as List?)?.map((l) => Lesson.fromJson(l)).toList() ??
-              [],
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      currency: json['currency'] ?? 'SAR',
+      durationHours: json['duration_hours'],
+      thumbnailUrl: json['thumbnail_url'],
+      coverImageUrl: json['cover_image_url'],
+      status: CourseStatus.values.firstWhere(
+        (e) => e.name == (json['status'] ?? 'draft'),
+        orElse: () => CourseStatus.draft,
+      ),
+      studentsCount: json['students_count'] ?? 0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewsCount: json['reviews_count'] ?? 0,
+      isFeatured: json['is_featured'] ?? false,
+      createdAt: DateTime.parse(
+          json['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(
+          json['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 }
 
-enum CourseStatus { draft, pending, published, rejected, archived }
+enum CourseStatus { draft, pending_review, published, archived }
 
 enum CourseLevel { beginner, intermediate, advanced }

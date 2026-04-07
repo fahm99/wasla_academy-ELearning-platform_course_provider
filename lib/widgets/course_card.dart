@@ -68,17 +68,17 @@ class CourseCard extends StatelessWidget {
           topLeft: Radius.circular(12),
           topRight: Radius.circular(12),
         ),
-        image: course.imageUrl != null
+        image: course.thumbnailUrl != null
             ? DecorationImage(
-                image: NetworkImage(course.imageUrl!),
+                image: NetworkImage(course.thumbnailUrl!),
                 fit: BoxFit.cover,
               )
             : null,
-        color: course.imageUrl == null ? AppTheme.lightGray : null,
+        color: course.thumbnailUrl == null ? AppTheme.lightGray : null,
       ),
       child: Stack(
         children: [
-          if (course.imageUrl == null)
+          if (course.thumbnailUrl == null)
             const Center(
               child: Icon(
                 AppIcons.courses,

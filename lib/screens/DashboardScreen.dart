@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../repository/main_repository.dart';
 import '../theme/Theme.dart';
 import '../widgets/index.dart';
-import '../data/Mockdata.dart';
 import '../utils/app_icons.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -44,12 +43,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStatisticsCards() {
-    return FutureBuilder<Map<String, int>>(
-      future: context.read<MainRepository>().getBasicStatistics(),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: context.read<MainRepository>().getStatistics(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           final stats = snapshot.data!;
-          return _buildUnifiedStatisticsCard(stats);
+          final intStats = stats
+              .map((k, v) => MapEntry(k, (v is int) ? v : (v as num).toInt()));
+          return _buildUnifiedStatisticsCard(intStats);
         } else {
           return _buildUnifiedStatisticsCardSkeleton();
         }
@@ -468,18 +469,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: MockData.mockNotifications.take(3).length,
+            itemCount: 0,
             separatorBuilder: (context, index) => Divider(
               color: AppTheme.darkBlue.withOpacity(0.1),
             ),
             itemBuilder: (context, index) {
-              final notification = MockData.mockNotifications[index];
-              return _buildNotificationItem(
-                title: notification['title'],
-                message: notification['message'],
-                timestamp: notification['timestamp'] ?? DateTime.now(),
-                isRead: notification['isRead'] ?? false,
-              );
+              return const SizedBox.shrink();
             },
           ),
         ],

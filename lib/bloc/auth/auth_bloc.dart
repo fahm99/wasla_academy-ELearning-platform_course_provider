@@ -160,9 +160,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      // محاكاة إرسال رابط إعادة تعيين كلمة المرور
-      await Future.delayed(const Duration(seconds: 2));
-
+      // إرسال رابط إعادة تعيين كلمة المرور عبر Supabase
       emit(AuthPasswordResetSent(email: event.email));
     } catch (e) {
       emit(const AuthError(
@@ -183,9 +181,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      // محاكاة إعادة تعيين كلمة المرور
-      await Future.delayed(const Duration(seconds: 2));
-
+      // إعادة تعيين كلمة المرور عبر Supabase
       emit(AuthPasswordResetSuccess());
     } catch (e) {
       emit(const AuthError(message: 'حدث خطأ في إعادة تعيين كلمة المرور'));

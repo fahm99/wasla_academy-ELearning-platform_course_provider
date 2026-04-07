@@ -7,36 +7,15 @@ import 'repository/main_repository.dart';
 import 'bloc/bloc.dart';
 import 'screens/Auth.dart';
 import 'screens/MainScreen.dart';
-import 'data/Mockdata.dart';
+import 'services/supabase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // تهيئة البيانات الوهمية
-  await _initializeMockData();
+  // تهيئة Supabase
+  await SupabaseService().initialize();
 
   runApp(const WaslaApp());
-}
-
-Future<void> _initializeMockData() async {
-  final repository = MainRepository();
-
-  // التحقق من وجود بيانات مسبقة
-  final existingCourses = await repository.getCourses();
-  if (existingCourses.isEmpty) {
-    // إضافة البيانات الوهمية
-    // إضافة البيانات الوهمية باستخدام الـ repositories المنفصلة
-    for (final course in MockData.mockCourses) {
-      await repository.addCourse(course);
-    }
-    for (final student in MockData.mockStudents) {
-      await repository.addStudent(student);
-    }
-    for (final certificate in MockData.mockCertificates) {
-      await repository.addCertificate(certificate);
-    }
-    await repository.updateSettings(MockData.mockSettings);
-  }
 }
 
 class WaslaApp extends StatelessWidget {

@@ -222,12 +222,10 @@ class FilterDialog extends StatelessWidget {
     switch (status) {
       case CourseStatus.draft:
         return 'مسودة';
-      case CourseStatus.pending:
+      case CourseStatus.pending_review:
         return 'قيد المراجعة';
       case CourseStatus.published:
         return 'منشورة';
-      case CourseStatus.rejected:
-        return 'مرفوضة';
       case CourseStatus.archived:
         return 'مؤرشفة';
     }
@@ -549,7 +547,7 @@ class TermsDialog extends StatelessWidget {
 
 // نوافذ حوار للطلاب
 class AddStudentDialog extends StatelessWidget {
-  final Function(Student) onSave;
+  final Function(String studentId, String courseId) onSave;
 
   const AddStudentDialog({
     super.key,
@@ -559,16 +557,16 @@ class AddStudentDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('إضافة طالب جديد'),
+      title: const Text('تسجيل طالب في كورس'),
       content: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
-            decoration: InputDecoration(labelText: 'الاسم'),
+            decoration: InputDecoration(labelText: 'معرف الطالب'),
           ),
           SizedBox(height: 16),
           TextField(
-            decoration: InputDecoration(labelText: 'البريد الإلكتروني'),
+            decoration: InputDecoration(labelText: 'معرف الكورس'),
           ),
         ],
       ),
@@ -580,15 +578,7 @@ class AddStudentDialog extends StatelessWidget {
         ElevatedButton(
           onPressed: () {
             Navigator.of(context).pop();
-            // إنشاء طالب وهمي
-            final student = Student(
-              id: DateTime.now().millisecondsSinceEpoch.toString(),
-              name: 'طالب جديد',
-              email: 'student@example.com',
-              enrollmentDate: DateTime.now(),
-              status: StudentStatus.active,
-            );
-            onSave(student);
+            onSave('student_id', 'course_id');
           },
           child: const Text('حفظ'),
         ),
@@ -598,31 +588,25 @@ class AddStudentDialog extends StatelessWidget {
 }
 
 class EditStudentDialog extends StatelessWidget {
-  final Student student;
-  final Function(Student) onSave;
+  final Enrollment enrollment;
+  final Function(Enrollment) onSave;
 
   const EditStudentDialog({
     super.key,
-    required this.student,
+    required this.enrollment,
     required this.onSave,
   });
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('تعديل بيانات الطالب'),
+      title: const Text('تعديل بيانات التسجيل'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
-            decoration: const InputDecoration(labelText: 'الاسم'),
-            controller: TextEditingController(text: student.name),
-          ),
+          Text('الطالب: ${enrollment.studentId}'),
           const SizedBox(height: 16),
-          TextField(
-            decoration: const InputDecoration(labelText: 'البريد الإلكتروني'),
-            controller: TextEditingController(text: student.email),
-          ),
+          Text('الكورس: ${enrollment.courseId}'),
         ],
       ),
       actions: [
@@ -633,7 +617,7 @@ class EditStudentDialog extends StatelessWidget {
         ElevatedButton(
           onPressed: () {
             Navigator.of(context).pop();
-            onSave(student);
+            onSave(enrollment);
           },
           child: const Text('حفظ'),
         ),
@@ -643,10 +627,10 @@ class EditStudentDialog extends StatelessWidget {
 }
 
 class StudentFilterDialog extends StatelessWidget {
-  final StudentStatus? selectedStatus;
+  final EnrollmentStatus? selectedStatus;
   final String? selectedCourse;
   final List<String> courses;
-  final Function(StudentStatus?, String?) onApply;
+  final Function(EnrollmentStatus?, String?) onApply;
   final VoidCallback onClear;
 
   const StudentFilterDialog({
@@ -690,24 +674,23 @@ class StudentFilterDialog extends StatelessWidget {
 }
 
 class EnrollToCourseDialog extends StatelessWidget {
-  final Student student;
+  final String studentId;
   final Function(String) onEnroll;
 
   const EnrollToCourseDialog({
     super.key,
-    required this.student,
+    required this.studentId,
     required this.onEnroll,
   });
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('تسجيل ${student.name} في كورس'),
+      title: Text('تسجيل الطالب في كورس'),
       content: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('اختر الكورس للتسجيل فيه'),
-          // يمكن إضافة dropdown للكورسات هنا
         ],
       ),
       actions: [

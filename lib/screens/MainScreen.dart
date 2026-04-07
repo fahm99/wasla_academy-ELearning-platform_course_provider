@@ -101,7 +101,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final isTablet = screenWidth >= 600 && screenWidth < 768;
 
     // Check if we're on web or desktop platform
-    final isWebOrDesktop = kIsWeb || !kIsWeb; // Simplified check for now
+    const isWebOrDesktop = kIsWeb || !kIsWeb; // Simplified check for now
 
     // For web/desktop, we want to show sidebar instead of bottom nav
     final showSidebarPermanently = isDesktop && isWebOrDesktop;
@@ -159,7 +159,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   AppBar _buildAppBar() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 768;
-    final isWebOrDesktop = kIsWeb || !kIsWeb; // Simplified check for now
+    const isWebOrDesktop = kIsWeb || !kIsWeb; // Simplified check for now
     final showSidebarPermanently = isDesktop && isWebOrDesktop;
 
     return AppBar(
@@ -422,7 +422,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 768;
     final isTablet = screenWidth >= 600 && screenWidth < 1024;
-    final isWebOrDesktop = kIsWeb || !kIsWeb; // Simplified check for now
+    const isWebOrDesktop = kIsWeb || !kIsWeb; // Simplified check for now
     final showSidebarPermanently = isDesktop && isWebOrDesktop;
 
     // Updated menu items - removed students item
@@ -867,7 +867,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Widget _buildMainContent() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 768;
-    final isWebOrDesktop = kIsWeb || !kIsWeb; // Simplified check for now
+    const isWebOrDesktop = kIsWeb || !kIsWeb; // Simplified check for now
     final showSidebarPermanently = isDesktop && isWebOrDesktop;
 
     if (showSidebarPermanently && screenWidth >= 768) {

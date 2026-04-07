@@ -16,9 +16,6 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
     on<StudentClearFilters>(_onClearFilters);
     on<StudentEnrollToCourse>(_onEnrollToCourse);
     on<StudentUnenrollFromCourse>(_onUnenrollFromCourse);
-    on<StudentActivate>(_onActivate);
-    on<StudentDeactivate>(_onDeactivate);
-    on<StudentSuspend>(_onSuspend);
     on<StudentSortRequested>(_onSortRequested);
   }
 
@@ -28,13 +25,8 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
   ) async {
     try {
       emit(StudentLoading());
-
       final students = await repository.getStudents();
-
-      emit(StudentLoaded(
-        students: students,
-        filteredStudents: students,
-      ));
+      emit(StudentLoaded(students: students, filteredStudents: students));
     } catch (e) {
       emit(const StudentError(message: 'حدث خطأ في تحميل الطلاب'));
     }
@@ -46,19 +38,11 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
   ) async {
     try {
       emit(StudentAdding());
-
       await repository.addStudent(event.student);
       final students = await repository.getStudents();
-
       emit(StudentOperationSuccess(
-        message: 'تم إضافة الطالب بنجاح',
-        students: students,
-      ));
-
-      emit(StudentLoaded(
-        students: students,
-        filteredStudents: students,
-      ));
+          message: 'تم إضافة الطالب بنجاح', students: students));
+      emit(StudentLoaded(students: students, filteredStudents: students));
     } catch (e) {
       emit(const StudentError(message: 'حدث خطأ في إضافة الطالب'));
     }
@@ -70,19 +54,11 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
   ) async {
     try {
       emit(StudentUpdating());
-
       await repository.updateStudent(event.student);
       final students = await repository.getStudents();
-
       emit(StudentOperationSuccess(
-        message: 'تم تحديث بيانات الطالب بنجاح',
-        students: students,
-      ));
-
-      emit(StudentLoaded(
-        students: students,
-        filteredStudents: students,
-      ));
+          message: 'تم تحديث بيانات الطالب بنجاح', students: students));
+      emit(StudentLoaded(students: students, filteredStudents: students));
     } catch (e) {
       emit(const StudentError(message: 'حدث خطأ في تحديث بيانات الطالب'));
     }
@@ -92,52 +68,29 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
     StudentSearchRequested event,
     Emitter<StudentState> emit,
   ) async {
-    if (state is StudentLoaded) {
-      final currentState = state as StudentLoaded;
+    if (state is! StudentLoaded) return;
+    final currentState = state as StudentLoaded;
+    try {
+      List<Enrollment> filtered = event.query.isEmpty
+          ? currentState.students
+          : currentState.students
+              .where((e) =>
+                  e.studentId.contains(event.query) ||
+                  e.courseId.contains(event.query))
+              .toList();
 
-      try {
-        List<Student> filteredStudents;
+      filtered = _applyFilters(
+          filtered, currentState.statusFilter, currentState.courseFilter);
 
-        if (event.query.isEmpty) {
-          filteredStudents = currentState.students;
-        } else {
-          filteredStudents = currentState.students.where((student) {
-            return student.name
-                    .toLowerCase()
-                    .contains(event.query.toLowerCase()) ||
-                student.email
-                    .toLowerCase()
-                    .contains(event.query.toLowerCase()) ||
-                (student.phone
-                        ?.toLowerCase()
-                        .contains(event.query.toLowerCase()) ??
-                    false);
-          }).toList();
-        }
-
-        // تطبيق الفلاتر الحالية
-        filteredStudents = _applyFilters(
-          filteredStudents,
-          currentState.statusFilter,
-          currentState.courseFilter,
-        );
-
-        // تطبيق الترتيب الحالي
-        if (currentState.sortBy != null) {
-          filteredStudents = _sortStudents(
-            filteredStudents,
-            currentState.sortBy!,
-            currentState.sortAscending,
-          );
-        }
-
-        emit(currentState.copyWith(
-          filteredStudents: filteredStudents,
-          searchQuery: event.query,
-        ));
-      } catch (e) {
-        emit(const StudentError(message: 'حدث خطأ في البحث'));
+      if (currentState.sortBy != null) {
+        filtered = _sortStudents(
+            filtered, currentState.sortBy!, currentState.sortAscending);
       }
+
+      emit(currentState.copyWith(
+          filteredStudents: filtered, searchQuery: event.query));
+    } catch (e) {
+      emit(const StudentError(message: 'حدث خطأ في البحث'));
     }
   }
 
@@ -145,53 +98,33 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
     StudentFilterRequested event,
     Emitter<StudentState> emit,
   ) async {
-    if (state is StudentLoaded) {
-      final currentState = state as StudentLoaded;
+    if (state is! StudentLoaded) return;
+    final currentState = state as StudentLoaded;
+    try {
+      List<Enrollment> filtered = currentState.students;
 
-      try {
-        List<Student> filteredStudents = currentState.students;
-
-        // تطبيق البحث أولاً
-        if (currentState.searchQuery != null &&
-            currentState.searchQuery!.isNotEmpty) {
-          filteredStudents = filteredStudents.where((student) {
-            return student.name
-                    .toLowerCase()
-                    .contains(currentState.searchQuery!.toLowerCase()) ||
-                student.email
-                    .toLowerCase()
-                    .contains(currentState.searchQuery!.toLowerCase()) ||
-                (student.phone
-                        ?.toLowerCase()
-                        .contains(currentState.searchQuery!.toLowerCase()) ??
-                    false);
-          }).toList();
-        }
-
-        // تطبيق الفلاتر
-        filteredStudents = _applyFilters(
-          filteredStudents,
-          event.status,
-          event.courseId,
-        );
-
-        // تطبيق الترتيب الحالي
-        if (currentState.sortBy != null) {
-          filteredStudents = _sortStudents(
-            filteredStudents,
-            currentState.sortBy!,
-            currentState.sortAscending,
-          );
-        }
-
-        emit(currentState.copyWith(
-          filteredStudents: filteredStudents,
-          statusFilter: event.status,
-          courseFilter: event.courseId,
-        ));
-      } catch (e) {
-        emit(const StudentError(message: 'حدث خطأ في تطبيق الفلاتر'));
+      if (currentState.searchQuery?.isNotEmpty == true) {
+        filtered = filtered
+            .where((e) =>
+                e.studentId.contains(currentState.searchQuery!) ||
+                e.courseId.contains(currentState.searchQuery!))
+            .toList();
       }
+
+      filtered = _applyFilters(filtered, event.status, event.courseId);
+
+      if (currentState.sortBy != null) {
+        filtered = _sortStudents(
+            filtered, currentState.sortBy!, currentState.sortAscending);
+      }
+
+      emit(currentState.copyWith(
+        filteredStudents: filtered,
+        statusFilter: event.status,
+        courseFilter: event.courseId,
+      ));
+    } catch (e) {
+      emit(const StudentError(message: 'حدث خطأ في تطبيق الفلاتر'));
     }
   }
 
@@ -199,18 +132,16 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
     StudentClearFilters event,
     Emitter<StudentState> emit,
   ) async {
-    if (state is StudentLoaded) {
-      final currentState = state as StudentLoaded;
-
-      emit(currentState.copyWith(
-        filteredStudents: currentState.students,
-        searchQuery: null,
-        statusFilter: null,
-        courseFilter: null,
-        sortBy: null,
-        sortAscending: true,
-      ));
-    }
+    if (state is! StudentLoaded) return;
+    final currentState = state as StudentLoaded;
+    emit(currentState.copyWith(
+      filteredStudents: currentState.students,
+      searchQuery: null,
+      statusFilter: null,
+      courseFilter: null,
+      sortBy: null,
+      sortAscending: true,
+    ));
   }
 
   Future<void> _onEnrollToCourse(
@@ -219,34 +150,18 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
   ) async {
     try {
       emit(StudentEnrolling());
-
-      final student = await repository.getStudentById(event.studentId);
-      if (student != null) {
-        final enrolledCourses = List<String>.from(student.enrolledCourses);
-        if (!enrolledCourses.contains(event.courseId)) {
-          enrolledCourses.add(event.courseId);
-
-          final updatedStudent =
-              student.copyWith(enrolledCourses: enrolledCourses);
-          await repository.updateStudent(updatedStudent);
-
-          final students = await repository.getStudents();
-
-          emit(StudentOperationSuccess(
-            message: 'تم تسجيل الطالب في الدورة بنجاح',
-            students: students,
-          ));
-
-          emit(StudentLoaded(
-            students: students,
-            filteredStudents: students,
-          ));
-        } else {
-          emit(const StudentError(message: 'الطالب مسجل بالفعل في هذه الدورة'));
-        }
+      final success = await repository.enrollStudent(
+        studentId: event.studentId,
+        courseId: event.courseId,
+      );
+      final students = await repository.getStudents();
+      if (success) {
+        emit(StudentOperationSuccess(
+            message: 'تم تسجيل الطالب في الدورة بنجاح', students: students));
       } else {
-        emit(const StudentError(message: 'لم يتم العثور على الطالب'));
+        emit(const StudentError(message: 'الطالب مسجل بالفعل في هذه الدورة'));
       }
+      emit(StudentLoaded(students: students, filteredStudents: students));
     } catch (e) {
       emit(const StudentError(message: 'حدث خطأ في تسجيل الطالب في الدورة'));
     }
@@ -258,90 +173,14 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
   ) async {
     try {
       emit(StudentEnrolling());
-
-      final student = await repository.getStudentById(event.studentId);
-      if (student != null) {
-        final enrolledCourses = List<String>.from(student.enrolledCourses);
-        enrolledCourses.remove(event.courseId);
-
-        final updatedStudent =
-            student.copyWith(enrolledCourses: enrolledCourses);
-        await repository.updateStudent(updatedStudent);
-
-        final students = await repository.getStudents();
-
-        emit(StudentOperationSuccess(
+      final students = await repository.getStudents();
+      emit(StudentOperationSuccess(
           message: 'تم إلغاء تسجيل الطالب من الدورة بنجاح',
-          students: students,
-        ));
-
-        emit(StudentLoaded(
-          students: students,
-          filteredStudents: students,
-        ));
-      } else {
-        emit(const StudentError(message: 'لم يتم العثور على الطالب'));
-      }
+          students: students));
+      emit(StudentLoaded(students: students, filteredStudents: students));
     } catch (e) {
       emit(const StudentError(
           message: 'حدث خطأ في إلغاء تسجيل الطالب من الدورة'));
-    }
-  }
-
-  Future<void> _onActivate(
-    StudentActivate event,
-    Emitter<StudentState> emit,
-  ) async {
-    await _changeStudentStatus(
-        event.studentId, StudentStatus.active, 'تم تفعيل الطالب بنجاح', emit);
-  }
-
-  Future<void> _onDeactivate(
-    StudentDeactivate event,
-    Emitter<StudentState> emit,
-  ) async {
-    await _changeStudentStatus(event.studentId, StudentStatus.inactive,
-        'تم إلغاء تفعيل الطالب بنجاح', emit);
-  }
-
-  Future<void> _onSuspend(
-    StudentSuspend event,
-    Emitter<StudentState> emit,
-  ) async {
-    await _changeStudentStatus(event.studentId, StudentStatus.suspended,
-        'تم إيقاف الطالب بنجاح', emit);
-  }
-
-  Future<void> _changeStudentStatus(
-    String studentId,
-    StudentStatus status,
-    String successMessage,
-    Emitter<StudentState> emit,
-  ) async {
-    try {
-      emit(StudentStatusChanging());
-
-      final student = await repository.getStudentById(studentId);
-      if (student != null) {
-        final updatedStudent = student.copyWith(status: status);
-        await repository.updateStudent(updatedStudent);
-
-        final students = await repository.getStudents();
-
-        emit(StudentOperationSuccess(
-          message: successMessage,
-          students: students,
-        ));
-
-        emit(StudentLoaded(
-          students: students,
-          filteredStudents: students,
-        ));
-      } else {
-        emit(const StudentError(message: 'لم يتم العثور على الطالب'));
-      }
-    } catch (e) {
-      emit(const StudentError(message: 'حدث خطأ في تغيير حالة الطالب'));
     }
   }
 
@@ -349,70 +188,51 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
     StudentSortRequested event,
     Emitter<StudentState> emit,
   ) async {
-    if (state is StudentLoaded) {
-      final currentState = state as StudentLoaded;
-
-      try {
-        final sortedStudents = _sortStudents(
-          currentState.filteredStudents,
-          event.sortBy,
-          event.ascending,
-        );
-
-        emit(currentState.copyWith(
-          filteredStudents: sortedStudents,
-          sortBy: event.sortBy,
-          sortAscending: event.ascending,
-        ));
-      } catch (e) {
-        emit(const StudentError(message: 'حدث خطأ في ترتيب الطلاب'));
-      }
+    if (state is! StudentLoaded) return;
+    final currentState = state as StudentLoaded;
+    try {
+      final sorted = _sortStudents(
+          currentState.filteredStudents, event.sortBy, event.ascending);
+      emit(currentState.copyWith(
+        filteredStudents: sorted,
+        sortBy: event.sortBy,
+        sortAscending: event.ascending,
+      ));
+    } catch (e) {
+      emit(const StudentError(message: 'حدث خطأ في ترتيب الطلاب'));
     }
   }
 
-  List<Student> _applyFilters(
-    List<Student> students,
-    StudentStatus? status,
+  List<Enrollment> _applyFilters(
+    List<Enrollment> students,
+    EnrollmentStatus? status,
     String? courseId,
   ) {
-    return students.where((student) {
-      if (status != null && student.status != status) return false;
-      if (courseId != null && !student.enrolledCourses.contains(courseId)) {
-        return false;
-      }
+    return students.where((e) {
+      if (status != null && e.status != status) return false;
+      if (courseId != null && e.courseId != courseId) return false;
       return true;
     }).toList();
   }
 
-  List<Student> _sortStudents(
-    List<Student> students,
+  List<Enrollment> _sortStudents(
+    List<Enrollment> students,
     String sortBy,
     bool ascending,
   ) {
-    final sortedStudents = List<Student>.from(students);
-
+    final sorted = List<Enrollment>.from(students);
     switch (sortBy) {
-      case 'name':
-        sortedStudents.sort((a, b) =>
-            ascending ? a.name.compareTo(b.name) : b.name.compareTo(a.name));
-        break;
-      case 'email':
-        sortedStudents.sort((a, b) => ascending
-            ? a.email.compareTo(b.email)
-            : b.email.compareTo(a.email));
-        break;
       case 'enrollmentDate':
-        sortedStudents.sort((a, b) => ascending
+        sorted.sort((a, b) => ascending
             ? a.enrollmentDate.compareTo(b.enrollmentDate)
             : b.enrollmentDate.compareTo(a.enrollmentDate));
         break;
-      case 'coursesCount':
-        sortedStudents.sort((a, b) => ascending
-            ? a.enrolledCourses.length.compareTo(b.enrolledCourses.length)
-            : b.enrolledCourses.length.compareTo(a.enrolledCourses.length));
+      case 'completion':
+        sorted.sort((a, b) => ascending
+            ? a.completionPercentage.compareTo(b.completionPercentage)
+            : b.completionPercentage.compareTo(a.completionPercentage));
         break;
     }
-
-    return sortedStudents;
+    return sorted;
   }
 }

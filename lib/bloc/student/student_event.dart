@@ -11,7 +11,7 @@ abstract class StudentEvent extends Equatable {
 class StudentLoadRequested extends StudentEvent {}
 
 class StudentAddRequested extends StudentEvent {
-  final Student student;
+  final Enrollment student;
 
   const StudentAddRequested({required this.student});
 
@@ -20,7 +20,7 @@ class StudentAddRequested extends StudentEvent {
 }
 
 class StudentUpdateRequested extends StudentEvent {
-  final Student student;
+  final Enrollment student;
 
   const StudentUpdateRequested({required this.student});
 
@@ -38,7 +38,7 @@ class StudentSearchRequested extends StudentEvent {
 }
 
 class StudentFilterRequested extends StudentEvent {
-  final StudentStatus? status;
+  final EnrollmentStatus? status;
   final String? courseId;
 
   const StudentFilterRequested({

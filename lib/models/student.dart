@@ -1,92 +1,91 @@
 import 'package:equatable/equatable.dart';
 
-class Student extends Equatable {
+class Enrollment extends Equatable {
   final String id;
-  final String name;
-  final String email;
-  final String? phone;
-  final String? avatar;
+  final String studentId;
+  final String courseId;
   final DateTime enrollmentDate;
-  final List<String> enrolledCourses;
-  final List<String> certificateIds;
-  final StudentStatus status;
+  final int completionPercentage;
+  final EnrollmentStatus status;
+  final DateTime? lastAccessed;
+  final String? certificateId;
 
-  const Student({
+  const Enrollment({
     required this.id,
-    required this.name,
-    required this.email,
-    this.phone,
-    this.avatar,
+    required this.studentId,
+    required this.courseId,
     required this.enrollmentDate,
-    this.enrolledCourses = const [],
-    this.certificateIds = const [],
-    this.status = StudentStatus.active,
+    this.completionPercentage = 0,
+    this.status = EnrollmentStatus.active,
+    this.lastAccessed,
+    this.certificateId,
   });
 
   @override
   List<Object?> get props => [
         id,
-        name,
-        email,
-        phone,
-        avatar,
+        studentId,
+        courseId,
         enrollmentDate,
-        enrolledCourses,
-        certificateIds,
-        status
+        completionPercentage,
+        status,
+        lastAccessed,
+        certificateId,
       ];
 
-  Student copyWith({
+  Enrollment copyWith({
     String? id,
-    String? name,
-    String? email,
-    String? phone,
-    String? avatar,
+    String? studentId,
+    String? courseId,
     DateTime? enrollmentDate,
-    List<String>? enrolledCourses,
-    List<String>? certificateIds,
-    StudentStatus? status,
+    int? completionPercentage,
+    EnrollmentStatus? status,
+    DateTime? lastAccessed,
+    String? certificateId,
   }) {
-    return Student(
+    return Enrollment(
       id: id ?? this.id,
-      name: name ?? this.name,
-      email: email ?? this.email,
-      phone: phone ?? this.phone,
-      avatar: avatar ?? this.avatar,
+      studentId: studentId ?? this.studentId,
+      courseId: courseId ?? this.courseId,
       enrollmentDate: enrollmentDate ?? this.enrollmentDate,
-      enrolledCourses: enrolledCourses ?? this.enrolledCourses,
-      certificateIds: certificateIds ?? this.certificateIds,
+      completionPercentage: completionPercentage ?? this.completionPercentage,
       status: status ?? this.status,
+      lastAccessed: lastAccessed ?? this.lastAccessed,
+      certificateId: certificateId ?? this.certificateId,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
-      'email': email,
-      'phone': phone,
-      'avatar': avatar,
-      'enrollmentDate': enrollmentDate.toIso8601String(),
-      'enrolledCourses': enrolledCourses,
-      'certificateIds': certificateIds,
+      'student_id': studentId,
+      'course_id': courseId,
+      'enrollment_date': enrollmentDate.toIso8601String(),
+      'completion_percentage': completionPercentage,
       'status': status.name,
+      'last_accessed': lastAccessed?.toIso8601String(),
+      'certificate_id': certificateId,
     };
   }
 
-  factory Student.fromJson(Map<String, dynamic> json) {
-    return Student(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      phone: json['phone'],
-      avatar: json['avatar'],
-      enrollmentDate: DateTime.parse(json['enrollmentDate']),
-      enrolledCourses: List<String>.from(json['enrolledCourses'] ?? []),
-      certificateIds: List<String>.from(json['certificateIds'] ?? []),
-      status: StudentStatus.values.firstWhere((e) => e.name == json['status']),
+  factory Enrollment.fromJson(Map<String, dynamic> json) {
+    return Enrollment(
+      id: json['id'] ?? '',
+      studentId: json['student_id'] ?? '',
+      courseId: json['course_id'] ?? '',
+      enrollmentDate: DateTime.parse(
+          json['enrollment_date'] ?? DateTime.now().toIso8601String()),
+      completionPercentage: json['completion_percentage'] ?? 0,
+      status: EnrollmentStatus.values.firstWhere(
+        (e) => e.name == (json['status'] ?? 'active'),
+        orElse: () => EnrollmentStatus.active,
+      ),
+      lastAccessed: json['last_accessed'] != null
+          ? DateTime.parse(json['last_accessed'])
+          : null,
+      certificateId: json['certificate_id'],
     );
   }
 }
 
-enum StudentStatus { active, inactive, suspended }
+enum EnrollmentStatus { active, completed, dropped }

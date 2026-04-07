@@ -242,11 +242,16 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     try {
       emit(SettingsResetting());
 
-      const defaultSettings = AppSettings();
+      final user = await repository.getUser();
+      final defaultSettings = AppSettings(
+        id: '',
+        userId: user?.id ?? '',
+        updatedAt: DateTime.now(),
+      );
       await repository.updateSettings(defaultSettings);
 
-      emit(const SettingsResetSuccess(settings: defaultSettings));
-      emit(const SettingsLoaded(settings: defaultSettings));
+      emit(SettingsResetSuccess(settings: defaultSettings));
+      emit(SettingsLoaded(settings: defaultSettings));
     } catch (e) {
       emit(const SettingsError(message: 'حدث خطأ في إعادة تعيين الإعدادات'));
     }

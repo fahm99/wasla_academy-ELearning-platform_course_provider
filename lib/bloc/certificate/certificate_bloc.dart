@@ -27,9 +27,7 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateLoading());
-
       final certificates = await repository.getCertificates();
-
       emit(CertificateLoaded(
         certificates: certificates,
         filteredCertificates: certificates,
@@ -46,70 +44,40 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
     try {
       emit(CertificateIssuing());
 
-      // الحصول على بيانات الطالب والدورة
-      final student = await repository.getStudentById(event.studentId);
       final course = await repository.getCourseById(event.courseId);
-
-      if (student == null) {
-        emit(const CertificateError(message: 'لم يتم العثور على الطالب'));
-        return;
-      }
-
       if (course == null) {
         emit(const CertificateError(message: 'لم يتم العثور على الدورة'));
         return;
       }
 
-      // التحقق من أن الطالب مسجل في الدورة
-      if (!student.enrolledCourses.contains(event.courseId)) {
-        emit(const CertificateError(message: 'الطالب غير مسجل في هذه الدورة'));
-        return;
-      }
-
       // التحقق من عدم وجود شهادة مسبقة
       final existingCertificates = await repository.getCertificates();
-      final existingCertificate = existingCertificates
-          .where((cert) =>
-              cert.studentId == event.studentId &&
-              cert.courseId == event.courseId)
-          .firstOrNull;
+      final alreadyIssued = existingCertificates.any((cert) =>
+          cert.studentId == event.studentId && cert.courseId == event.courseId);
 
-      if (existingCertificate != null) {
+      if (alreadyIssued) {
         emit(const CertificateError(
             message: 'تم إصدار شهادة لهذا الطالب في هذه الدورة مسبقاً'));
         return;
       }
 
-      // إنشاء الشهادة
-      final certificate = Certificate(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        studentId: event.studentId,
-        studentName: student.name,
+      // إصدار الشهادة عبر Repository
+      final certificate = await repository.issueCertificate(
         courseId: event.courseId,
-        courseName: event.courseTitle,
+        studentId: event.studentId,
         providerId: course.providerId,
-        providerName: course.providerName,
-        issuedAt: DateTime.now(),
-        certificateUrl:
-            'https://example.com/certificates/${DateTime.now().millisecondsSinceEpoch}.pdf',
-        status: CertificateStatus.active,
       );
 
-      await repository.addCertificate(certificate);
-
-      // تحديث بيانات الطالب لإضافة الشهادة
-      final updatedStudent = student.copyWith(
-        certificateIds: [...student.certificateIds, certificate.id],
-      );
-      await repository.updateStudent(updatedStudent);
+      if (certificate == null) {
+        emit(const CertificateError(message: 'حدث خطأ في إصدار الشهادة'));
+        return;
+      }
 
       final certificates = await repository.getCertificates();
-
       emit(CertificateOperationSuccess(
         message: 'تم إصدار الشهادة بنجاح',
         certificates: certificates,
       ));
-
       emit(CertificateLoaded(
         certificates: certificates,
         filteredCertificates: certificates,
@@ -125,21 +93,16 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateRevoking());
-
       final certificate =
           await repository.getCertificateById(event.certificateId);
       if (certificate != null) {
-        final updatedCertificate =
-            certificate.copyWith(status: CertificateStatus.revoked);
-        await repository.updateCertificate(updatedCertificate);
-
+        final updated = certificate.copyWith(status: CertificateStatus.revoked);
+        await repository.updateCertificate(updated);
         final certificates = await repository.getCertificates();
-
         emit(CertificateOperationSuccess(
           message: 'تم إلغاء الشهادة بنجاح',
           certificates: certificates,
         ));
-
         emit(CertificateLoaded(
           certificates: certificates,
           filteredCertificates: certificates,
@@ -158,21 +121,16 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateRevoking());
-
       final certificate =
           await repository.getCertificateById(event.certificateId);
       if (certificate != null) {
-        final updatedCertificate =
-            certificate.copyWith(status: CertificateStatus.active);
-        await repository.updateCertificate(updatedCertificate);
-
+        final updated = certificate.copyWith(status: CertificateStatus.issued);
+        await repository.updateCertificate(updated);
         final certificates = await repository.getCertificates();
-
         emit(CertificateOperationSuccess(
           message: 'تم استعادة الشهادة بنجاح',
           certificates: certificates,
         ));
-
         emit(CertificateLoaded(
           certificates: certificates,
           filteredCertificates: certificates,
@@ -189,53 +147,39 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
     CertificateSearchRequested event,
     Emitter<CertificateState> emit,
   ) async {
-    if (state is CertificateLoaded) {
-      final currentState = state as CertificateLoaded;
+    if (state is! CertificateLoaded) return;
+    final currentState = state as CertificateLoaded;
+    try {
+      List<Certificate> filtered = event.query.isEmpty
+          ? currentState.certificates
+          : currentState.certificates
+              .where((cert) =>
+                  cert.studentId.contains(event.query) ||
+                  cert.courseId.contains(event.query) ||
+                  cert.certificateNumber
+                      .toLowerCase()
+                      .contains(event.query.toLowerCase()))
+              .toList();
 
-      try {
-        List<Certificate> filteredCertificates;
+      filtered = _applyFilters(
+        filtered,
+        currentState.statusFilter,
+        currentState.courseFilter,
+        currentState.startDateFilter,
+        currentState.endDateFilter,
+      );
 
-        if (event.query.isEmpty) {
-          filteredCertificates = currentState.certificates;
-        } else {
-          filteredCertificates = currentState.certificates.where((certificate) {
-            return certificate.studentName
-                    .toLowerCase()
-                    .contains(event.query.toLowerCase()) ||
-                certificate.courseName
-                    .toLowerCase()
-                    .contains(event.query.toLowerCase()) ||
-                certificate.id
-                    .toLowerCase()
-                    .contains(event.query.toLowerCase());
-          }).toList();
-        }
-
-        // تطبيق الفلاتر الحالية
-        filteredCertificates = _applyFilters(
-          filteredCertificates,
-          currentState.statusFilter,
-          currentState.courseFilter,
-          currentState.startDateFilter,
-          currentState.endDateFilter,
-        );
-
-        // تطبيق الترتيب الحالي
-        if (currentState.sortBy != null) {
-          filteredCertificates = _sortCertificates(
-            filteredCertificates,
-            currentState.sortBy!,
-            currentState.sortAscending,
-          );
-        }
-
-        emit(currentState.copyWith(
-          filteredCertificates: filteredCertificates,
-          searchQuery: event.query,
-        ));
-      } catch (e) {
-        emit(const CertificateError(message: 'حدث خطأ في البحث'));
+      if (currentState.sortBy != null) {
+        filtered = _sortCertificates(
+            filtered, currentState.sortBy!, currentState.sortAscending);
       }
+
+      emit(currentState.copyWith(
+        filteredCertificates: filtered,
+        searchQuery: event.query,
+      ));
+    } catch (e) {
+      emit(const CertificateError(message: 'حدث خطأ في البحث'));
     }
   }
 
@@ -243,56 +187,39 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
     CertificateFilterRequested event,
     Emitter<CertificateState> emit,
   ) async {
-    if (state is CertificateLoaded) {
-      final currentState = state as CertificateLoaded;
+    if (state is! CertificateLoaded) return;
+    final currentState = state as CertificateLoaded;
+    try {
+      List<Certificate> filtered = currentState.certificates;
 
-      try {
-        List<Certificate> filteredCertificates = currentState.certificates;
-
-        // تطبيق البحث أولاً
-        if (currentState.searchQuery != null &&
-            currentState.searchQuery!.isNotEmpty) {
-          filteredCertificates = filteredCertificates.where((certificate) {
-            return certificate.studentName
+      if (currentState.searchQuery?.isNotEmpty == true) {
+        filtered = filtered
+            .where((cert) =>
+                cert.studentId.contains(currentState.searchQuery!) ||
+                cert.courseId.contains(currentState.searchQuery!) ||
+                cert.certificateNumber
                     .toLowerCase()
-                    .contains(currentState.searchQuery!.toLowerCase()) ||
-                certificate.courseName
-                    .toLowerCase()
-                    .contains(currentState.searchQuery!.toLowerCase()) ||
-                certificate.id
-                    .toLowerCase()
-                    .contains(currentState.searchQuery!.toLowerCase());
-          }).toList();
-        }
-
-        // تطبيق الفلاتر
-        filteredCertificates = _applyFilters(
-          filteredCertificates,
-          event.status,
-          event.courseId,
-          event.startDate,
-          event.endDate,
-        );
-
-        // تطبيق الترتيب الحالي
-        if (currentState.sortBy != null) {
-          filteredCertificates = _sortCertificates(
-            filteredCertificates,
-            currentState.sortBy!,
-            currentState.sortAscending,
-          );
-        }
-
-        emit(currentState.copyWith(
-          filteredCertificates: filteredCertificates,
-          statusFilter: event.status,
-          courseFilter: event.courseId,
-          startDateFilter: event.startDate,
-          endDateFilter: event.endDate,
-        ));
-      } catch (e) {
-        emit(const CertificateError(message: 'حدث خطأ في تطبيق الفلاتر'));
+                    .contains(currentState.searchQuery!.toLowerCase()))
+            .toList();
       }
+
+      filtered = _applyFilters(filtered, event.status, event.courseId,
+          event.startDate, event.endDate);
+
+      if (currentState.sortBy != null) {
+        filtered = _sortCertificates(
+            filtered, currentState.sortBy!, currentState.sortAscending);
+      }
+
+      emit(currentState.copyWith(
+        filteredCertificates: filtered,
+        statusFilter: event.status,
+        courseFilter: event.courseId,
+        startDateFilter: event.startDate,
+        endDateFilter: event.endDate,
+      ));
+    } catch (e) {
+      emit(const CertificateError(message: 'حدث خطأ في تطبيق الفلاتر'));
     }
   }
 
@@ -300,44 +227,39 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
     CertificateClearFilters event,
     Emitter<CertificateState> emit,
   ) async {
-    if (state is CertificateLoaded) {
-      final currentState = state as CertificateLoaded;
-
-      emit(currentState.copyWith(
-        filteredCertificates: currentState.certificates,
-        searchQuery: null,
-        statusFilter: null,
-        courseFilter: null,
-        startDateFilter: null,
-        endDateFilter: null,
-        sortBy: null,
-        sortAscending: true,
-      ));
-    }
+    if (state is! CertificateLoaded) return;
+    final currentState = state as CertificateLoaded;
+    emit(currentState.copyWith(
+      filteredCertificates: currentState.certificates,
+      searchQuery: null,
+      statusFilter: null,
+      courseFilter: null,
+      startDateFilter: null,
+      endDateFilter: null,
+      sortBy: null,
+      sortAscending: true,
+    ));
   }
 
   Future<void> _onSortRequested(
     CertificateSortRequested event,
     Emitter<CertificateState> emit,
   ) async {
-    if (state is CertificateLoaded) {
-      final currentState = state as CertificateLoaded;
-
-      try {
-        final sortedCertificates = _sortCertificates(
-          currentState.filteredCertificates,
-          event.sortBy,
-          event.ascending,
-        );
-
-        emit(currentState.copyWith(
-          filteredCertificates: sortedCertificates,
-          sortBy: event.sortBy,
-          sortAscending: event.ascending,
-        ));
-      } catch (e) {
-        emit(const CertificateError(message: 'حدث خطأ في ترتيب الشهادات'));
-      }
+    if (state is! CertificateLoaded) return;
+    final currentState = state as CertificateLoaded;
+    try {
+      final sorted = _sortCertificates(
+        currentState.filteredCertificates,
+        event.sortBy,
+        event.ascending,
+      );
+      emit(currentState.copyWith(
+        filteredCertificates: sorted,
+        sortBy: event.sortBy,
+        sortAscending: event.ascending,
+      ));
+    } catch (e) {
+      emit(const CertificateError(message: 'حدث خطأ في ترتيب الشهادات'));
     }
   }
 
@@ -347,16 +269,11 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateDownloading());
-
       final certificate =
           await repository.getCertificateById(event.certificateId);
       if (certificate != null) {
-        // محاكاة تحميل الشهادة
-        await Future.delayed(const Duration(seconds: 2));
-
-        // في التطبيق الحقيقي، سيتم تحميل الملف الفعلي
-        final filePath = '/downloads/certificate_${certificate.id}.pdf';
-
+        final filePath = certificate.certificateUrl ??
+            '/downloads/certificate_${certificate.id}.pdf';
         emit(CertificateDownloaded(filePath: filePath));
       } else {
         emit(const CertificateError(message: 'لم يتم العثور على الشهادة'));
@@ -372,16 +289,11 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateSharing());
-
       final certificate =
           await repository.getCertificateById(event.certificateId);
       if (certificate != null) {
-        // محاكاة إنشاء رابط المشاركة
-        await Future.delayed(const Duration(seconds: 1));
-
         final shareUrl =
-            'https://wasla.com/certificates/verify/${certificate.id}';
-
+            'https://wasla.com/certificates/verify/${certificate.certificateNumber}';
         emit(CertificateShared(shareUrl: shareUrl));
       } else {
         emit(const CertificateError(message: 'لم يتم العثور على الشهادة'));
@@ -397,19 +309,11 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateVerifying());
-
       final certificate =
           await repository.getCertificateById(event.certificateId);
       if (certificate != null) {
-        // محاكاة التحقق من صحة الشهادة
-        await Future.delayed(const Duration(seconds: 2));
-
-        final isValid = certificate.status == CertificateStatus.active;
-
-        emit(CertificateVerified(
-          certificate: certificate,
-          isValid: isValid,
-        ));
+        final isValid = certificate.status == CertificateStatus.issued;
+        emit(CertificateVerified(certificate: certificate, isValid: isValid));
       } else {
         emit(const CertificateError(message: 'لم يتم العثور على الشهادة'));
       }
@@ -425,15 +329,11 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
     DateTime? startDate,
     DateTime? endDate,
   ) {
-    return certificates.where((certificate) {
-      if (status != null && certificate.status != status) return false;
-      if (courseId != null && certificate.courseId != courseId) return false;
-      if (startDate != null && certificate.issuedAt.isBefore(startDate)) {
-        return false;
-      }
-      if (endDate != null && certificate.issuedAt.isAfter(endDate)) {
-        return false;
-      }
+    return certificates.where((cert) {
+      if (status != null && cert.status != status) return false;
+      if (courseId != null && cert.courseId != courseId) return false;
+      if (startDate != null && cert.issueDate.isBefore(startDate)) return false;
+      if (endDate != null && cert.issueDate.isAfter(endDate)) return false;
       return true;
     }).toList();
   }
@@ -443,26 +343,19 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
     String sortBy,
     bool ascending,
   ) {
-    final sortedCertificates = List<Certificate>.from(certificates);
-
+    final sorted = List<Certificate>.from(certificates);
     switch (sortBy) {
-      case 'studentName':
-        sortedCertificates.sort((a, b) => ascending
-            ? a.studentName.compareTo(b.studentName)
-            : b.studentName.compareTo(a.studentName));
+      case 'issueDate':
+        sorted.sort((a, b) => ascending
+            ? a.issueDate.compareTo(b.issueDate)
+            : b.issueDate.compareTo(a.issueDate));
         break;
-      case 'courseName':
-        sortedCertificates.sort((a, b) => ascending
-            ? a.courseName.compareTo(b.courseName)
-            : b.courseName.compareTo(a.courseName));
-        break;
-      case 'issuedAt':
-        sortedCertificates.sort((a, b) => ascending
-            ? a.issuedAt.compareTo(b.issuedAt)
-            : b.issuedAt.compareTo(a.issuedAt));
+      case 'certificateNumber':
+        sorted.sort((a, b) => ascending
+            ? a.certificateNumber.compareTo(b.certificateNumber)
+            : b.certificateNumber.compareTo(a.certificateNumber));
         break;
     }
-
-    return sortedCertificates;
+    return sorted;
   }
 }

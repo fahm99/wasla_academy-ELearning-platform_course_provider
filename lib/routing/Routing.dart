@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../screens/Auth.dart';
 import '../screens/MainScreen.dart';
-import '../repository/Repository.dart';
+import '../repository/main_repository.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -47,7 +47,7 @@ class AppRouter {
     // إعادة توجيه
     redirect: (context, state) async {
       // التحقق من حالة المصادقة
-      final repository = Repository();
+      final repository = MainRepository();
       final isLoggedIn = await repository.isLoggedIn();
 
       // إذا لم يكن المستخدم مسجلاً دخوله وحاول الوصول إلى الشاشة الرئيسية
@@ -182,7 +182,6 @@ class AppRoutes {
       title: 'الشهادات',
       icon: Icons.card_membership,
     ),
-
     RouteInfo(
       path: '/main/settings',
       name: 'settings',

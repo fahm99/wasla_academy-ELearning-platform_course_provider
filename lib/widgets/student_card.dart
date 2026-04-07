@@ -1,34 +1,28 @@
 import 'package:flutter/material.dart';
-import '../theme/Theme.dart';
 import '../models/index.dart';
+import '../theme/Theme.dart';
 import '../utils/app_icons.dart';
 
 class StudentCard extends StatelessWidget {
-  final Student student;
+  final Enrollment enrollment;
+  final String? studentName;
+  final String? studentEmail;
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onEnroll;
   final VoidCallback? onMessage;
-  final VoidCallback? onActivate;
-  final VoidCallback? onDeactivate;
-  final VoidCallback? onSuspend;
-  final VoidCallback? onEnrollToCourse;
-  final VoidCallback? onViewCertificates;
 
   const StudentCard({
     super.key,
-    required this.student,
+    required this.enrollment,
+    this.studentName,
+    this.studentEmail,
     this.onTap,
     this.onEdit,
     this.onDelete,
     this.onEnroll,
     this.onMessage,
-    this.onActivate,
-    this.onDeactivate,
-    this.onSuspend,
-    this.onEnrollToCourse,
-    this.onViewCertificates,
   });
 
   @override
@@ -54,16 +48,12 @@ class StudentCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: isMobile ? 25 : 30,
-                    backgroundImage: student.avatar != null
-                        ? NetworkImage(student.avatar!)
-                        : null,
-                    child: student.avatar == null
-                        ? Icon(
-                            AppIcons.user,
-                            size: isMobile ? 25 : 30,
-                            color: AppTheme.darkGray,
-                          )
-                        : null,
+                    backgroundColor: AppTheme.darkBlue.withOpacity(0.1),
+                    child: Icon(
+                      AppIcons.user,
+                      size: isMobile ? 25 : 30,
+                      color: AppTheme.darkBlue,
+                    ),
                   ),
                   SizedBox(
                       width: isMobile
@@ -74,7 +64,7 @@ class StudentCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          student.name,
+                          studentName ?? enrollment.studentId,
                           style: TextStyle(
                             fontSize: isMobile ? 14 : 16,
                             fontWeight: FontWeight.bold,
@@ -83,24 +73,16 @@ class StudentCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        SizedBox(height: isMobile ? 2 : 4),
-                        Text(
-                          student.email,
-                          style: TextStyle(
-                            fontSize: isMobile ? 10 : 12,
-                            color: AppTheme.darkGray,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (student.phone != null) ...[
+                        if (studentEmail != null) ...[
                           SizedBox(height: isMobile ? 2 : 4),
                           Text(
-                            student.phone!,
+                            studentEmail!,
                             style: TextStyle(
                               fontSize: isMobile ? 10 : 12,
                               color: AppTheme.darkGray,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ],
@@ -115,11 +97,11 @@ class StudentCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(student.status),
+                          color: _getStatusColor(enrollment.status),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          _getStatusText(student.status),
+                          _getStatusText(enrollment.status),
                           style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
@@ -129,7 +111,7 @@ class StudentCard extends StatelessWidget {
                       ),
                       SizedBox(height: isMobile ? 4 : 8),
                       Text(
-                        '${student.enrolledCourses.length} كورس',
+                        '${enrollment.completionPercentage}%',
                         style: TextStyle(
                           fontSize: isMobile ? 10 : 12,
                           color: AppTheme.darkGray,
@@ -145,14 +127,11 @@ class StudentCard extends StatelessWidget {
                       : AppTheme.paddingMedium),
               Row(
                 children: [
-                  const Icon(
-                    AppIcons.calendar,
-                    size: 12,
-                    color: AppTheme.darkGray,
-                  ),
+                  const Icon(AppIcons.calendar,
+                      size: 12, color: AppTheme.darkGray),
                   const SizedBox(width: 4),
                   Text(
-                    'تاريخ التسجيل: ${_formatDate(student.enrollmentDate)}',
+                    'تاريخ التسجيل: ${_formatDate(enrollment.enrollmentDate)}',
                     style: TextStyle(
                       fontSize: isMobile ? 10 : 12,
                       color: AppTheme.darkGray,
@@ -160,26 +139,6 @@ class StudentCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (student.certificateIds.isNotEmpty) ...[
-                SizedBox(height: isMobile ? 4 : 8),
-                Row(
-                  children: [
-                    const Icon(
-                      AppIcons.star,
-                      size: 12,
-                      color: AppTheme.yellow,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${student.certificateIds.length} شهادة',
-                      style: TextStyle(
-                        fontSize: isMobile ? 10 : 12,
-                        color: AppTheme.darkGray,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
               SizedBox(
                   height: isMobile
                       ? AppTheme.paddingSmall
@@ -233,24 +192,24 @@ class StudentCard extends StatelessWidget {
     );
   }
 
-  String _getStatusText(StudentStatus status) {
+  String _getStatusText(EnrollmentStatus status) {
     switch (status) {
-      case StudentStatus.active:
+      case EnrollmentStatus.active:
         return 'نشط';
-      case StudentStatus.inactive:
-        return 'غير نشط';
-      case StudentStatus.suspended:
-        return 'موقوف';
+      case EnrollmentStatus.completed:
+        return 'مكتمل';
+      case EnrollmentStatus.dropped:
+        return 'منسحب';
     }
   }
 
-  Color _getStatusColor(StudentStatus status) {
+  Color _getStatusColor(EnrollmentStatus status) {
     switch (status) {
-      case StudentStatus.active:
+      case EnrollmentStatus.active:
         return AppTheme.green;
-      case StudentStatus.inactive:
-        return AppTheme.darkGray;
-      case StudentStatus.suspended:
+      case EnrollmentStatus.completed:
+        return AppTheme.darkBlue;
+      case EnrollmentStatus.dropped:
         return AppTheme.red;
     }
   }

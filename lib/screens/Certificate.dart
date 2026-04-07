@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:course_provider/screens/certificate_preview_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../bloc/bloc.dart';

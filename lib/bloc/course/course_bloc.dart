@@ -133,11 +133,10 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
                 course.description
                     .toLowerCase()
                     .contains(event.query.toLowerCase()) ||
-                course.category
-                    .toLowerCase()
-                    .contains(event.query.toLowerCase()) ||
-                course.tags.any((tag) =>
-                    tag.toLowerCase().contains(event.query.toLowerCase()));
+                (course.category
+                        ?.toLowerCase()
+                        .contains(event.query.toLowerCase()) ??
+                    false);
           }).toList();
         }
 
@@ -147,7 +146,6 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
           currentState.statusFilter,
           currentState.levelFilter,
           currentState.categoryFilter,
-          currentState.isFreeFilter,
         );
 
         // تطبيق الترتيب الحالي
@@ -189,12 +187,10 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
                 course.description
                     .toLowerCase()
                     .contains(currentState.searchQuery!.toLowerCase()) ||
-                course.category
-                    .toLowerCase()
-                    .contains(currentState.searchQuery!.toLowerCase()) ||
-                course.tags.any((tag) => tag
-                    .toLowerCase()
-                    .contains(currentState.searchQuery!.toLowerCase()));
+                (course.category
+                        ?.toLowerCase()
+                        .contains(currentState.searchQuery!.toLowerCase()) ??
+                    false);
           }).toList();
         }
 
@@ -204,7 +200,6 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
           event.status,
           event.level,
           event.category,
-          event.isFree,
         );
 
         // تطبيق الترتيب الحالي
@@ -221,7 +216,6 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
           statusFilter: event.status,
           levelFilter: event.level,
           categoryFilter: event.category,
-          isFreeFilter: event.isFree,
         ));
       } catch (e) {
         emit(const CourseError(message: 'حدث خطأ في تطبيق الفلاتر'));
@@ -242,7 +236,6 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
         statusFilter: null,
         levelFilter: null,
         categoryFilter: null,
-        isFreeFilter: null,
         sortBy: null,
         sortAscending: true,
       ));
@@ -256,28 +249,18 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
     try {
       emit(CoursePublishing());
 
-      final course = await repository.getCourseById(event.courseId);
-      if (course != null) {
-        final updatedCourse = course.copyWith(
-          status: CourseStatus.published,
-          publishedAt: DateTime.now(),
-        );
+      await repository.publishCourse(event.courseId);
+      final courses = await repository.getCourses();
 
-        await repository.updateCourse(updatedCourse);
-        final courses = await repository.getCourses();
+      emit(CourseOperationSuccess(
+        message: 'تم نشر الدورة بنجاح',
+        courses: courses,
+      ));
 
-        emit(CourseOperationSuccess(
-          message: 'تم نشر الدورة بنجاح',
-          courses: courses,
-        ));
-
-        emit(CourseLoaded(
-          courses: courses,
-          filteredCourses: courses,
-        ));
-      } else {
-        emit(const CourseError(message: 'لم يتم العثور على الدورة'));
-      }
+      emit(CourseLoaded(
+        courses: courses,
+        filteredCourses: courses,
+      ));
     } catch (e) {
       emit(const CourseError(message: 'حدث خطأ في نشر الدورة'));
     }
@@ -290,28 +273,18 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
     try {
       emit(CoursePublishing());
 
-      final course = await repository.getCourseById(event.courseId);
-      if (course != null) {
-        final updatedCourse = course.copyWith(
-          status: CourseStatus.draft,
-          publishedAt: null,
-        );
+      await repository.unpublishCourse(event.courseId);
+      final courses = await repository.getCourses();
 
-        await repository.updateCourse(updatedCourse);
-        final courses = await repository.getCourses();
+      emit(CourseOperationSuccess(
+        message: 'تم إلغاء نشر الدورة بنجاح',
+        courses: courses,
+      ));
 
-        emit(CourseOperationSuccess(
-          message: 'تم إلغاء نشر الدورة بنجاح',
-          courses: courses,
-        ));
-
-        emit(CourseLoaded(
-          courses: courses,
-          filteredCourses: courses,
-        ));
-      } else {
-        emit(const CourseError(message: 'لم يتم العثور على الدورة'));
-      }
+      emit(CourseLoaded(
+        courses: courses,
+        filteredCourses: courses,
+      ));
     } catch (e) {
       emit(const CourseError(message: 'حدث خطأ في إلغاء نشر الدورة'));
     }
@@ -330,11 +303,11 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           title: '${course.title} - نسخة',
           status: CourseStatus.draft,
-          publishedAt: null,
           studentsCount: 0,
           rating: 0,
           reviewsCount: 0,
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         await repository.addCourse(duplicatedCourse);
@@ -449,13 +422,11 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
     CourseStatus? status,
     CourseLevel? level,
     String? category,
-    bool? isFree,
   ) {
     return courses.where((course) {
       if (status != null && course.status != status) return false;
       if (level != null && course.level != level) return false;
       if (category != null && course.category != category) return false;
-      if (isFree != null && course.isFree != isFree) return false;
       return true;
     }).toList();
   }

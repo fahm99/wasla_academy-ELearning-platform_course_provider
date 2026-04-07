@@ -13,10 +13,10 @@ class StudentInitial extends StudentState {}
 class StudentLoading extends StudentState {}
 
 class StudentLoaded extends StudentState {
-  final List<Student> students;
-  final List<Student> filteredStudents;
+  final List<Enrollment> students;
+  final List<Enrollment> filteredStudents;
   final String? searchQuery;
-  final StudentStatus? statusFilter;
+  final EnrollmentStatus? statusFilter;
   final String? courseFilter;
   final String? sortBy;
   final bool sortAscending;
@@ -43,10 +43,10 @@ class StudentLoaded extends StudentState {
       ];
 
   StudentLoaded copyWith({
-    List<Student>? students,
-    List<Student>? filteredStudents,
+    List<Enrollment>? students,
+    List<Enrollment>? filteredStudents,
     String? searchQuery,
-    StudentStatus? statusFilter,
+    EnrollmentStatus? statusFilter,
     String? courseFilter,
     String? sortBy,
     bool? sortAscending,
@@ -74,7 +74,7 @@ class StudentError extends StudentState {
 
 class StudentOperationSuccess extends StudentState {
   final String message;
-  final List<Student> students;
+  final List<Enrollment> students;
 
   const StudentOperationSuccess({
     required this.message,

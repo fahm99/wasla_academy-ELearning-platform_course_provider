@@ -98,8 +98,8 @@ class UserProfileWidget extends StatelessWidget {
           CircleAvatar(
             radius: isMobile ? 30 : 35,
             backgroundImage:
-                user.avatar != null ? NetworkImage(user.avatar!) : null,
-            child: user.avatar == null
+                user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+            child: user.avatarUrl == null
                 ? Icon(
                     Icons.person,
                     size: isMobile ? 30 : 35,
@@ -149,7 +149,7 @@ class UserProfileWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              _getUserTypeText(user.type),
+              _getUserTypeText(user.userType),
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -206,8 +206,8 @@ class ProfileHeader extends StatelessWidget {
           CircleAvatar(
             radius: isMobile ? 40 : 50,
             backgroundImage:
-                user.avatar != null ? NetworkImage(user.avatar!) : null,
-            child: user.avatar == null
+                user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+            child: user.avatarUrl == null
                 ? Icon(
                     Icons.person,
                     size: isMobile ? 40 : 50,
@@ -246,7 +246,7 @@ class ProfileHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              _getUserTypeText(user.type),
+              _getUserTypeText(user.userType),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

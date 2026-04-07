@@ -125,23 +125,16 @@ class _SettingsScreenState extends State<SettingsScreen>
             ],
           ),
           child: ClipOval(
-            child: user.profileImage != null && user.profileImage!.isNotEmpty
-                ? (user.profileImage!.startsWith('assets/')
-                    ? Image.asset(
-                        user.profileImage!,
+            child:
+                user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
+                    ? Image.network(
+                        user.profileImageUrl!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return _buildDefaultAvatar();
                         },
                       )
-                    : Image.network(
-                        user.profileImage!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildDefaultAvatar();
-                        },
-                      ))
-                : _buildDefaultAvatar(),
+                    : _buildDefaultAvatar(),
           ),
         ),
         const SizedBox(height: AppTheme.paddingMedium),

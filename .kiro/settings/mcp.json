@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "uvx",
+      "args": ["supabase-mcp@latest"],
+      "env": {
+        "SUPABASE_URL": "https://hmgisljihrsztskvmbfd.supabase.co",
+        "SUPABASE_API_KEY": "sb_publishable_-ZiqWMN8A8uZdjO6S0prlQ_6GVN6my8",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "execute_sql",
+        "create_table",
+        "create_bucket",
+        "create_policy",
+        "create_function",
+        "create_trigger"
+      ]
+    }
+  }
+}

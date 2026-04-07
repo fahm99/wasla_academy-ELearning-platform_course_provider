@@ -2,107 +2,112 @@ import 'package:equatable/equatable.dart';
 
 class Certificate extends Equatable {
   final String id;
-  final String studentId;
-  final String studentName;
   final String courseId;
-  final String courseName;
+  final String studentId;
   final String providerId;
-  final String providerName;
-  final DateTime issuedAt;
-  final DateTime? expiresAt;
-  final CertificateStatus status;
+  final String certificateNumber;
+  final DateTime issueDate;
+  final DateTime? expiryDate;
+  final Map<String, dynamic>? templateDesign;
   final String? certificateUrl;
+  final CertificateStatus status;
+  final DateTime createdAt;
 
   const Certificate({
     required this.id,
-    required this.studentId,
-    required this.studentName,
     required this.courseId,
-    required this.courseName,
+    required this.studentId,
     required this.providerId,
-    required this.providerName,
-    required this.issuedAt,
-    this.expiresAt,
-    this.status = CertificateStatus.active,
+    required this.certificateNumber,
+    required this.issueDate,
+    this.expiryDate,
+    this.templateDesign,
     this.certificateUrl,
+    this.status = CertificateStatus.issued,
+    required this.createdAt,
   });
 
   @override
   List<Object?> get props => [
         id,
-        studentId,
-        studentName,
         courseId,
-        courseName,
+        studentId,
         providerId,
-        providerName,
-        issuedAt,
-        expiresAt,
+        certificateNumber,
+        issueDate,
+        expiryDate,
+        templateDesign,
+        certificateUrl,
         status,
-        certificateUrl
+        createdAt,
       ];
 
   Certificate copyWith({
     String? id,
-    String? studentId,
-    String? studentName,
     String? courseId,
-    String? courseName,
+    String? studentId,
     String? providerId,
-    String? providerName,
-    DateTime? issuedAt,
-    DateTime? expiresAt,
-    CertificateStatus? status,
+    String? certificateNumber,
+    DateTime? issueDate,
+    DateTime? expiryDate,
+    Map<String, dynamic>? templateDesign,
     String? certificateUrl,
+    CertificateStatus? status,
+    DateTime? createdAt,
   }) {
     return Certificate(
       id: id ?? this.id,
-      studentId: studentId ?? this.studentId,
-      studentName: studentName ?? this.studentName,
       courseId: courseId ?? this.courseId,
-      courseName: courseName ?? this.courseName,
+      studentId: studentId ?? this.studentId,
       providerId: providerId ?? this.providerId,
-      providerName: providerName ?? this.providerName,
-      issuedAt: issuedAt ?? this.issuedAt,
-      expiresAt: expiresAt ?? this.expiresAt,
-      status: status ?? this.status,
+      certificateNumber: certificateNumber ?? this.certificateNumber,
+      issueDate: issueDate ?? this.issueDate,
+      expiryDate: expiryDate ?? this.expiryDate,
+      templateDesign: templateDesign ?? this.templateDesign,
       certificateUrl: certificateUrl ?? this.certificateUrl,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'studentId': studentId,
-      'studentName': studentName,
-      'courseId': courseId,
-      'courseName': courseName,
-      'providerId': providerId,
-      'providerName': providerName,
-      'issuedAt': issuedAt.toIso8601String(),
-      'expiresAt': expiresAt?.toIso8601String(),
+      'course_id': courseId,
+      'student_id': studentId,
+      'provider_id': providerId,
+      'certificate_number': certificateNumber,
+      'issue_date': issueDate.toIso8601String(),
+      'expiry_date': expiryDate?.toIso8601String(),
+      'template_design': templateDesign,
+      'certificate_url': certificateUrl,
       'status': status.name,
-      'certificateUrl': certificateUrl,
+      'created_at': createdAt.toIso8601String(),
     };
   }
 
   factory Certificate.fromJson(Map<String, dynamic> json) {
     return Certificate(
-      id: json['id'],
-      studentId: json['studentId'],
-      studentName: json['studentName'],
-      courseId: json['courseId'],
-      courseName: json['courseName'],
-      providerId: json['providerId'],
-      providerName: json['providerName'],
-      issuedAt: DateTime.parse(json['issuedAt']),
-      expiresAt:
-          json['expiresAt'] != null ? DateTime.parse(json['expiresAt']) : null,
-      status:
-          CertificateStatus.values.firstWhere((e) => e.name == json['status']),
-      certificateUrl: json['certificateUrl'],
+      id: json['id'] ?? '',
+      courseId: json['course_id'] ?? '',
+      studentId: json['student_id'] ?? '',
+      providerId: json['provider_id'] ?? '',
+      certificateNumber: json['certificate_number'] ?? '',
+      issueDate: DateTime.parse(
+          json['issue_date'] ?? DateTime.now().toIso8601String()),
+      expiryDate: json['expiry_date'] != null
+          ? DateTime.parse(json['expiry_date'])
+          : null,
+      templateDesign: json['template_design'],
+      certificateUrl: json['certificate_url'],
+      status: CertificateStatus.values.firstWhere(
+        (e) => e.name == (json['status'] ?? 'issued'),
+        orElse: () => CertificateStatus.issued,
+      ),
+      createdAt: DateTime.parse(
+          json['created_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 }
 
-enum CertificateStatus { active, revoked, expired }
+enum CertificateStatus { issued, revoked }
