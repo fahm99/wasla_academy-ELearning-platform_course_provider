@@ -1,15 +1,19 @@
-import 'package:course_provider/features/auth/presentation/screens/auth_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'theme/Theme.dart';
-import 'repository/main_repository.dart';
-import 'bloc/bloc.dart';
-import 'screens/MainScreen.dart';
-import 'services/supabase_service.dart';
-import 'routing/Routing.dart';
+import 'core/theme/app_theme.dart';
+import 'core/routing/app_router.dart';
+import 'data/repositories/main_repository.dart';
+import 'data/services/supabase_service.dart';
+import 'presentation/blocs/auth/auth_bloc.dart';
+import 'presentation/blocs/auth/auth_event.dart';
+import 'presentation/blocs/certificate/certificate_bloc.dart';
+import 'presentation/blocs/course/course_bloc.dart';
+import 'presentation/blocs/navigation/navigation_bloc.dart';
+import 'presentation/blocs/settings/settings_bloc.dart';
+import 'presentation/blocs/settings/settings_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
