@@ -102,15 +102,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppTheme.darkBlue, AppTheme.blue],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: const Color(0xFF0C1445),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.darkBlue.withOpacity(0.3),
+            color: const Color(0xFF0C1445).withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -240,18 +236,18 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     final filtered = _filteredPayments;
 
     if (filtered.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
             Icon(
               Icons.payment,
               size: 64,
               color: AppTheme.mediumGray,
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16),
+            Text(
               'لا توجد مدفوعات',
               style: TextStyle(
                 fontSize: 18,

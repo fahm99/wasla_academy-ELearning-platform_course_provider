@@ -11,6 +11,9 @@ import 'package:course_provider/presentation/widgets/profile_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:course_provider/core/utils/app_icons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:course_provider/data/repositories/main_repository.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -41,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     return Scaffold(
       backgroundColor: AppTheme.lightGray,
       body: NestedScrollView(
+        physics: const BouncingScrollPhysics(),
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
           return <Widget>[
             SliverToBoxAdapter(
@@ -55,6 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         },
         body: TabBarView(
           controller: _tabController,
+          physics: const BouncingScrollPhysics(),
           children: [
             _buildGeneralSettingsTab(),
             _buildNotificationSettingsTab(),
@@ -71,28 +76,17 @@ class _SettingsScreenState extends State<SettingsScreen>
     return Container(
       padding: const EdgeInsets.all(AppTheme.paddingLarge),
       decoration: const BoxDecoration(
-        color: AppTheme.white,
+        color: Color(0xFF0C1445),
         boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
+            color: Colors.black26,
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          // عنوان الصفحة
-          const Center(
-            child: Text(
-              'الإعدادات',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.darkBlue,
-              ),
-            ),
-          ),
           const SizedBox(height: AppTheme.paddingLarge),
 
           // معلومات الملف الشخصي
@@ -112,27 +106,29 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget _buildUserProfileSection(User user) {
     return Column(
       children: [
-        // صورة المستخدم
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppTheme.darkBlue.withOpacity(0.2),
-              width: 3,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+        // صورة المستخدم مع زر التعديل
+        Stack(
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppTheme.white,
+                  width: 4,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: ClipOval(
-            child:
-                user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
+              child: ClipOval(
+                child: user.profileImageUrl != null &&
+                        user.profileImageUrl!.isNotEmpty
                     ? Image.network(
                         user.profileImageUrl!,
                         fit: BoxFit.cover,
@@ -141,7 +137,41 @@ class _SettingsScreenState extends State<SettingsScreen>
                         },
                       )
                     : _buildDefaultAvatar(),
-          ),
+              ),
+            ),
+            // زر تغيير الصورة
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: () => _changeProfileImage(user),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppTheme.yellow,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.white,
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Color(0xFF0C1445),
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: AppTheme.paddingMedium),
 
@@ -149,22 +179,40 @@ class _SettingsScreenState extends State<SettingsScreen>
         Text(
           user.name,
           style: const TextStyle(
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: AppTheme.darkBlue,
+            color: AppTheme.white,
+            shadows: [
+              Shadow(
+                color: Colors.black26,
+                offset: Offset(0, 2),
+                blurRadius: 4,
+              ),
+            ],
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppTheme.paddingSmall),
 
         // البريد الإلكتروني
-        Text(
-          user.email,
-          style: TextStyle(
-            fontSize: 16,
-            color: AppTheme.darkGray.withOpacity(0.8),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
           ),
-          textAlign: TextAlign.center,
+          decoration: BoxDecoration(
+            color: AppTheme.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            user.email,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppTheme.white,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ),
         const SizedBox(height: AppTheme.paddingLarge),
 
@@ -182,16 +230,16 @@ class _SettingsScreenState extends State<SettingsScreen>
           height: 120,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppTheme.lightGray,
+            color: AppTheme.white.withOpacity(0.2),
             border: Border.all(
-              color: AppTheme.darkBlue.withOpacity(0.2),
-              width: 3,
+              color: AppTheme.white,
+              width: 4,
             ),
           ),
           child: const Icon(
             Icons.person,
             size: 60,
-            color: AppTheme.darkGray,
+            color: AppTheme.white,
           ),
         ),
         const SizedBox(height: AppTheme.paddingMedium),
@@ -199,21 +247,31 @@ class _SettingsScreenState extends State<SettingsScreen>
         const Text(
           'مستخدم ضيف',
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: AppTheme.darkBlue,
+            color: AppTheme.white,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppTheme.paddingSmall),
 
-        Text(
-          'قم بتسجيل الدخول للوصول إلى جميع الميزات',
-          style: TextStyle(
-            fontSize: 16,
-            color: AppTheme.darkGray.withOpacity(0.8),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
           ),
-          textAlign: TextAlign.center,
+          decoration: BoxDecoration(
+            color: AppTheme.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text(
+            'قم بتسجيل الدخول للوصول إلى جميع الميزات',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppTheme.white,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ),
         const SizedBox(height: AppTheme.paddingLarge),
 
@@ -224,10 +282,10 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildDefaultAvatar() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
-          colors: [AppTheme.darkBlue, AppTheme.blue],
+          colors: [AppTheme.yellow, AppTheme.yellow.withOpacity(0.7)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -235,27 +293,61 @@ class _SettingsScreenState extends State<SettingsScreen>
       child: const Icon(
         Icons.person,
         size: 60,
-        color: AppTheme.white,
+        color: AppTheme.darkBlue,
       ),
     );
   }
 
   Widget _buildTabBar() {
     return Container(
-      color: AppTheme.white,
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: TabBar(
         controller: _tabController,
         labelColor: AppTheme.darkBlue,
         unselectedLabelColor: AppTheme.darkGray,
         indicatorColor: AppTheme.yellow,
-        indicatorWeight: 3,
+        indicatorWeight: 4,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelStyle: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
+        ),
         isScrollable: true,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         tabs: const [
-          Tab(text: 'عام'),
-          Tab(text: 'الإشعارات'),
-          Tab(text: 'الحساب'),
-          Tab(text: 'معلومات الدفع'),
-          Tab(text: 'حول التطبيق'),
+          Tab(
+            icon: Icon(Icons.settings, size: 20),
+            text: 'عام',
+          ),
+          Tab(
+            icon: Icon(Icons.notifications, size: 20),
+            text: 'الإشعارات',
+          ),
+          Tab(
+            icon: Icon(Icons.person, size: 20),
+            text: 'الحساب',
+          ),
+          Tab(
+            icon: Icon(Icons.payment, size: 20),
+            text: 'الدفع',
+          ),
+          Tab(
+            icon: Icon(Icons.info, size: 20),
+            text: 'حول',
+          ),
         ],
       ),
     );
@@ -444,8 +536,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                       title: 'طلاب جدد',
                       subtitle: 'عند انضمام طالب جديد',
                       trailing: Switch(
-                        value: true,
-                        onChanged: (value) {},
+                        value: state.settings.notifyNewStudents,
+                        onChanged: state.settings.notificationsEnabled
+                            ? (value) {
+                                context.read<SettingsBloc>().add(
+                                      SettingsNotifyNewStudentsToggled(
+                                          enabled: value),
+                                    );
+                              }
+                            : null,
                       ),
                     ),
                     SettingItem(
@@ -453,8 +552,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                       title: 'تقييمات جديدة',
                       subtitle: 'عند تلقي تقييم جديد',
                       trailing: Switch(
-                        value: true,
-                        onChanged: (value) {},
+                        value: state.settings.notifyNewReviews,
+                        onChanged: state.settings.notificationsEnabled
+                            ? (value) {
+                                context.read<SettingsBloc>().add(
+                                      SettingsNotifyNewReviewsToggled(
+                                          enabled: value),
+                                    );
+                              }
+                            : null,
                       ),
                     ),
                     SettingItem(
@@ -462,8 +568,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                       title: 'المدفوعات',
                       subtitle: 'عند تلقي دفعة جديدة',
                       trailing: Switch(
-                        value: true,
-                        onChanged: (value) {},
+                        value: state.settings.notifyNewPayments,
+                        onChanged: state.settings.notificationsEnabled
+                            ? (value) {
+                                context.read<SettingsBloc>().add(
+                                      SettingsNotifyNewPaymentsToggled(
+                                          enabled: value),
+                                    );
+                              }
+                            : null,
                       ),
                     ),
                   ],
@@ -565,41 +678,74 @@ class _SettingsScreenState extends State<SettingsScreen>
       child: Column(
         children: [
           _buildSettingsCard(
-            title: 'طريقة الدفع المفضلة',
+            title: 'إعدادات الدفع',
             children: [
               Container(
-                padding: const EdgeInsets.all(AppTheme.paddingMedium),
+                padding: const EdgeInsets.all(AppTheme.paddingLarge),
                 decoration: BoxDecoration(
-                  color: AppTheme.lightGray,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.darkGray.withOpacity(0.3)),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.yellow.withOpacity(0.1),
+                      AppTheme.blue.withOpacity(0.1),
+                    ],
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.yellow.withOpacity(0.3),
+                    width: 2,
+                  ),
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    const Icon(Icons.keyboard_arrow_down,
-                        color: AppTheme.darkGray),
-                    const SizedBox(width: AppTheme.paddingSmall),
+                    const Icon(
+                      Icons.account_balance_wallet,
+                      size: 48,
+                      color: AppTheme.darkBlue,
+                    ),
+                    const SizedBox(height: AppTheme.paddingMedium),
                     const Text(
-                      'تحويل بنكي',
+                      'إدارة معلومات الدفع',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                         color: AppTheme.darkBlue,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
+                    const SizedBox(height: AppTheme.paddingSmall),
+                    Text(
+                      'قم بإعداد معلومات المحفظة والحساب البنكي لاستقبال المدفوعات من الطلاب',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.darkGray.withOpacity(0.8),
                       ),
-                      child: const Text(
-                        'مفعل',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.green,
-                          fontWeight: FontWeight.bold,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppTheme.paddingLarge),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          context.push('/payment-settings');
+                        },
+                        icon: const Icon(Icons.settings),
+                        label: const Text(
+                          'إدارة إعدادات الدفع',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.yellow,
+                          foregroundColor: AppTheme.darkBlue,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 2,
                         ),
                       ),
                     ),
@@ -610,138 +756,70 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           const SizedBox(height: AppTheme.paddingLarge),
           _buildSettingsCard(
-            title: 'معلومات البنك',
+            title: 'معلومات سريعة',
             children: [
-              _buildPaymentInfoField(
-                label: 'اسم البنك',
-                value: 'البنك الأهلي التجاري',
-                icon: Icons.account_balance,
+              _buildInfoRow(
+                icon: Icons.info_outline,
+                title: 'طرق الدفع المتاحة',
+                value: 'محفظة إلكترونية • تحويل بنكي',
               ),
-              const SizedBox(height: AppTheme.paddingMedium),
-              _buildPaymentInfoField(
-                label: 'رقم الحساب',
-                value: 'SA1234567890123456789012',
-                icon: Icons.credit_card,
+              const Divider(height: 24),
+              _buildInfoRow(
+                icon: Icons.verified_user,
+                title: 'التحقق من المدفوعات',
+                value: 'يدوي من قبل مقدم الدورة',
               ),
-              const SizedBox(height: AppTheme.paddingMedium),
-              _buildPaymentInfoField(
-                label: 'الآيبان (IBAN)',
-                value: 'SA6512345678901234567890',
-                icon: Icons.account_balance_wallet,
-              ),
-              const SizedBox(height: AppTheme.paddingMedium),
-              _buildPaymentInfoField(
-                label: 'حد السحب الشهري (ريال يمني)',
-                value: '500000',
-                icon: Icons.money,
+              const Divider(height: 24),
+              _buildInfoRow(
+                icon: Icons.notifications_active,
+                title: 'الإشعارات',
+                value: 'تلقائية عند كل عملية دفع',
               ),
             ],
-          ),
-          const SizedBox(height: AppTheme.paddingLarge),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => _showSaveChangesDialog(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.yellow,
-                foregroundColor: AppTheme.darkBlue,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'حفظ التغييرات',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentInfoField({
-    required String label,
-    required String value,
+  Widget _buildInfoRow({
     required IconData icon,
+    required String title,
+    required String value,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.darkBlue,
-          ),
+        Icon(
+          icon,
+          color: AppTheme.darkBlue,
+          size: 24,
         ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppTheme.darkGray.withOpacity(0.3)),
-          ),
-          child: Row(
+        const SizedBox(width: AppTheme.paddingMedium),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                icon,
-                color: AppTheme.darkGray,
-                size: 20,
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.darkBlue,
+                ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.darkBlue,
-                  ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.darkGray.withOpacity(0.8),
                 ),
               ),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  void _showSaveChangesDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('حفظ التغييرات'),
-        content: const Text('هل تريد حفظ التغييرات على معلومات الدفع؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('تم حفظ التغييرات بنجاح'),
-                  backgroundColor: AppTheme.green,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.yellow,
-              foregroundColor: AppTheme.darkBlue,
-            ),
-            child: const Text('حفظ'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -829,22 +907,52 @@ class _SettingsScreenState extends State<SettingsScreen>
     required List<Widget> children,
   }) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.paddingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.darkBlue,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.white,
+              AppTheme.lightGray.withOpacity(0.3),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.paddingLarge),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: AppTheme.yellow,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.paddingSmall),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.darkBlue,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: AppTheme.paddingMedium),
-            ...children,
-          ],
+              const SizedBox(height: AppTheme.paddingLarge),
+              ...children,
+            ],
+          ),
         ),
       ),
     );
@@ -972,5 +1080,177 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (context) => const TermsDialog(),
     );
+  }
+
+  // تغيير صورة الملف الشخصي
+  Future<void> _changeProfileImage(User user) async {
+    final ImagePicker picker = ImagePicker();
+
+    // عرض خيارات اختيار الصورة
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading:
+                  const Icon(Icons.photo_library, color: AppTheme.darkBlue),
+              title: const Text('اختيار من المعرض'),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await picker.pickImage(
+                  source: ImageSource.gallery,
+                  maxWidth: 1024,
+                  maxHeight: 1024,
+                  imageQuality: 85,
+                );
+                if (image != null) {
+                  await _uploadProfileImage(image, user);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppTheme.darkBlue),
+              title: const Text('التقاط صورة'),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await picker.pickImage(
+                  source: ImageSource.camera,
+                  maxWidth: 1024,
+                  maxHeight: 1024,
+                  imageQuality: 85,
+                );
+                if (image != null) {
+                  await _uploadProfileImage(image, user);
+                }
+              },
+            ),
+            if (user.profileImageUrl != null &&
+                user.profileImageUrl!.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.delete, color: AppTheme.red),
+                title: const Text('حذف الصورة',
+                    style: TextStyle(color: AppTheme.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteProfileImage(user);
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('إلغاء'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // رفع الصورة إلى Storage وتحديث قاعدة البيانات
+  Future<void> _uploadProfileImage(XFile image, User user) async {
+    try {
+      // عرض مؤشر التحميل
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // رفع الصورة إلى Supabase Storage
+      final repository = context.read<MainRepository>();
+      final imageUrl = await repository.uploadProfileImage(
+        userId: user.id,
+        imagePath: image.path,
+      );
+
+      // تحديث معلومات المستخدم في قاعدة البيانات
+      await repository.updateUserProfile(
+        userId: user.id,
+        profileImageUrl: imageUrl,
+      );
+
+      // تحديث حالة Auth
+      context.read<AuthBloc>().add(AuthCheckStatus());
+
+      // إخفاء مؤشر التحميل
+      if (mounted) Navigator.pop(context);
+
+      // عرض رسالة نجاح
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تحديث صورة الملف الشخصي بنجاح'),
+            backgroundColor: AppTheme.green,
+          ),
+        );
+      }
+    } catch (e) {
+      // إخفاء مؤشر التحميل
+      if (mounted) Navigator.pop(context);
+
+      // عرض رسالة خطأ
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ في تحديث الصورة: ${e.toString()}'),
+            backgroundColor: AppTheme.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // حذف صورة الملف الشخصي
+  Future<void> _deleteProfileImage(User user) async {
+    try {
+      // عرض مؤشر التحميل
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // حذف الصورة من Storage وتحديث قاعدة البيانات
+      final repository = context.read<MainRepository>();
+      await repository.deleteProfileImage(userId: user.id);
+      await repository.updateUserProfile(
+        userId: user.id,
+        profileImageUrl: null,
+      );
+
+      // تحديث حالة Auth
+      context.read<AuthBloc>().add(AuthCheckStatus());
+
+      // إخفاء مؤشر التحميل
+      if (mounted) Navigator.pop(context);
+
+      // عرض رسالة نجاح
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم حذف صورة الملف الشخصي'),
+            backgroundColor: AppTheme.green,
+          ),
+        );
+      }
+    } catch (e) {
+      // إخفاء مؤشر التحميل
+      if (mounted) Navigator.pop(context);
+
+      // عرض رسالة خطأ
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ في حذف الصورة: ${e.toString()}'),
+            backgroundColor: AppTheme.red,
+          ),
+        );
+      }
+    }
   }
 }

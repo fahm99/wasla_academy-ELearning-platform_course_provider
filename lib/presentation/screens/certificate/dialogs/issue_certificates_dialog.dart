@@ -242,7 +242,7 @@ class _IssueCertificatesDialogState extends State<IssueCertificatesDialog> {
     }
 
     if (_filteredStudents.isEmpty) {
-      return Expanded(
+      return const Expanded(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -252,7 +252,7 @@ class _IssueCertificatesDialogState extends State<IssueCertificatesDialog> {
                 size: 64,
                 color: AppTheme.mediumGray,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 'لا يوجد طلاب مؤهلين للحصول على الشهادة',
                 style: TextStyle(
@@ -260,7 +260,7 @@ class _IssueCertificatesDialogState extends State<IssueCertificatesDialog> {
                   fontSize: 14,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 'يجب أن يكمل الطالب 100% من الكورس',
                 style: TextStyle(

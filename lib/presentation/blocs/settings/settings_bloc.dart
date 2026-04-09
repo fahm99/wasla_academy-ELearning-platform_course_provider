@@ -13,6 +13,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<SettingsNotificationsToggled>(_onNotificationsToggled);
     on<SettingsEmailNotificationsToggled>(_onEmailNotificationsToggled);
     on<SettingsPushNotificationsToggled>(_onPushNotificationsToggled);
+    on<SettingsNotifyNewStudentsToggled>(_onNotifyNewStudentsToggled);
+    on<SettingsNotifyNewReviewsToggled>(_onNotifyNewReviewsToggled);
+    on<SettingsNotifyNewPaymentsToggled>(_onNotifyNewPaymentsToggled);
     on<SettingsLanguageChanged>(_onLanguageChanged);
     on<SettingsThemeChanged>(_onThemeChanged);
     on<SettingsAutoSaveToggled>(_onAutoSaveToggled);
@@ -298,6 +301,99 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       emit(SettingsLoaded(settings: importedSettings));
     } catch (e) {
       emit(const SettingsError(message: 'حدث خطأ في استيراد الإعدادات'));
+    }
+  }
+
+  Future<void> _onNotifyNewStudentsToggled(
+    SettingsNotifyNewStudentsToggled event,
+    Emitter<SettingsState> emit,
+  ) async {
+    if (state is SettingsLoaded) {
+      final currentSettings = (state as SettingsLoaded).settings;
+
+      try {
+        emit(SettingsUpdating());
+
+        final updatedSettings = currentSettings.copyWith(
+          notifyNewStudents: event.enabled,
+        );
+
+        await repository.updateSettings(updatedSettings);
+
+        emit(SettingsUpdateSuccess(
+          message: event.enabled
+              ? 'تم تفعيل إشعارات الطلاب الجدد'
+              : 'تم إلغاء تفعيل إشعارات الطلاب الجدد',
+          settings: updatedSettings,
+        ));
+
+        emit(SettingsLoaded(settings: updatedSettings));
+      } catch (e) {
+        emit(const SettingsError(
+            message: 'حدث خطأ في تحديث إعدادات إشعارات الطلاب'));
+      }
+    }
+  }
+
+  Future<void> _onNotifyNewReviewsToggled(
+    SettingsNotifyNewReviewsToggled event,
+    Emitter<SettingsState> emit,
+  ) async {
+    if (state is SettingsLoaded) {
+      final currentSettings = (state as SettingsLoaded).settings;
+
+      try {
+        emit(SettingsUpdating());
+
+        final updatedSettings = currentSettings.copyWith(
+          notifyNewReviews: event.enabled,
+        );
+
+        await repository.updateSettings(updatedSettings);
+
+        emit(SettingsUpdateSuccess(
+          message: event.enabled
+              ? 'تم تفعيل إشعارات التقييمات الجديدة'
+              : 'تم إلغاء تفعيل إشعارات التقييمات الجديدة',
+          settings: updatedSettings,
+        ));
+
+        emit(SettingsLoaded(settings: updatedSettings));
+      } catch (e) {
+        emit(const SettingsError(
+            message: 'حدث خطأ في تحديث إعدادات إشعارات التقييمات'));
+      }
+    }
+  }
+
+  Future<void> _onNotifyNewPaymentsToggled(
+    SettingsNotifyNewPaymentsToggled event,
+    Emitter<SettingsState> emit,
+  ) async {
+    if (state is SettingsLoaded) {
+      final currentSettings = (state as SettingsLoaded).settings;
+
+      try {
+        emit(SettingsUpdating());
+
+        final updatedSettings = currentSettings.copyWith(
+          notifyNewPayments: event.enabled,
+        );
+
+        await repository.updateSettings(updatedSettings);
+
+        emit(SettingsUpdateSuccess(
+          message: event.enabled
+              ? 'تم تفعيل إشعارات المدفوعات الجديدة'
+              : 'تم إلغاء تفعيل إشعارات المدفوعات الجديدة',
+          settings: updatedSettings,
+        ));
+
+        emit(SettingsLoaded(settings: updatedSettings));
+      } catch (e) {
+        emit(const SettingsError(
+            message: 'حدث خطأ في تحديث إعدادات إشعارات المدفوعات'));
+      }
     }
   }
 }

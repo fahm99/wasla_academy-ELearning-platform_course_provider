@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -318,28 +317,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding:
                 const EdgeInsets.symmetric(horizontal: AppTheme.paddingMedium),
             children: [
-              _buildQuickActionCard(
-                icon: AppIcons.add,
-                title: 'إضافة دورة',
-                onTap: () => _navigateToCourseCreation(),
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: AppIcons.add,
+                  title: 'إضافة دورة',
+                  onTap: () => _navigateToCourseCreation(),
+                ),
               ),
               const SizedBox(width: AppTheme.paddingMedium),
-              _buildQuickActionCard(
-                icon: AppIcons.userAdd,
-                title: 'إضافة طالب',
-                onTap: () => _navigateToStudentCreation(),
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: AppIcons.userAdd,
+                  title: 'إضافة طالب',
+                  onTap: () => _navigateToStudentCreation(),
+                ),
               ),
               const SizedBox(width: AppTheme.paddingMedium),
-              _buildQuickActionCard(
-                icon: AppIcons.certificates,
-                title: 'إصدار شهادة',
-                onTap: () => _navigateToCertificateCreation(),
-              ),
-              const SizedBox(width: AppTheme.paddingMedium),
-              _buildQuickActionCard(
-                icon: AppIcons.download,
-                title: 'تصدير التقارير',
-                onTap: () => _exportReports(),
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: AppIcons.certificates,
+                  title: 'إصدار شهادة',
+                  onTap: () => _navigateToCertificateCreation(),
+                ),
               ),
             ],
           ),
@@ -356,7 +355,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 140,
         padding: const EdgeInsets.all(AppTheme.paddingMedium),
         decoration: BoxDecoration(
           color: AppTheme.white,
@@ -566,13 +564,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _navigateToCertificateCreation() {
     context.push('/main?tab=3');
-  }
-
-  void _exportReports() {
-    // تم إزالة تصدير التقارير المفصلة
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم إزالة ميزة تصدير التقارير المفصلة')),
-    );
   }
 
   void _showAllNotifications() {

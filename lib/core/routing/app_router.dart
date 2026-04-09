@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 import '../../presentation/screens/main_screen.dart';
 import '../../presentation/screens/auth_screen.dart';
+import '../../presentation/screens/landing.dart';
+import '../../presentation/screens/payment_settings_screen.dart';
 import '../../presentation/blocs/auth/auth_bloc.dart';
 import '../../presentation/blocs/auth/auth_event.dart';
 import '../../presentation/blocs/auth/auth_state.dart';
@@ -13,8 +15,15 @@ import '../../presentation/blocs/settings/settings_event.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: '/splash',
+    initialLocation: '/',
     routes: [
+      // صفحة الهبوط (Landing Page) - الشاشة الأولى
+      GoRoute(
+        path: '/',
+        name: 'landing',
+        builder: (context, state) => const WaslaHomePage(),
+      ),
+
       // شاشة البداية
       GoRoute(
         path: '/splash',
@@ -38,6 +47,13 @@ class AppRouter {
           final tabIndex = int.tryParse(tab) ?? 0;
           return MainScreen(initialTabIndex: tabIndex);
         },
+      ),
+
+      // شاشة إعدادات الدفع
+      GoRoute(
+        path: '/payment-settings',
+        name: 'payment-settings',
+        builder: (context, state) => const PaymentSettingsScreen(),
       ),
 
       // صفحة غير موجودة
@@ -122,7 +138,8 @@ class _SplashScreenState extends State<SplashScreen>
         if (state is AuthAuthenticated) {
           context.go('/main');
         } else if (state is AuthUnauthenticated) {
-          context.go('/auth');        }
+          context.go('/auth');
+        }
       },
       child: Scaffold(
         body: Container(

@@ -231,7 +231,7 @@ class _CourseStudentsScreenState extends State<CourseStudentsScreen> {
     }
 
     if (_filteredStudents.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -240,7 +240,7 @@ class _CourseStudentsScreenState extends State<CourseStudentsScreen> {
               size: 64,
               color: AppTheme.mediumGray,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'لا يوجد طلاب',
               style: TextStyle(

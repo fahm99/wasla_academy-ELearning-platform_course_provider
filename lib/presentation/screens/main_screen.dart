@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/app_icons.dart';
 import '../../core/utils/navigation_helper.dart';
+import '../../data/repositories/main_repository.dart';
 import '../blocs/auth/auth_bloc.dart';
 import '../blocs/auth/auth_event.dart';
 import '../blocs/auth/auth_state.dart';
@@ -16,6 +17,7 @@ import '../blocs/settings/settings_event.dart';
 import '../widgets/index.dart';
 import 'course_screen.dart';
 import 'certificate/certificate_screen.dart';
+import 'payments_screen.dart';
 import 'settings_screen.dart';
 import 'dashboard_screen.dart';
 
@@ -34,6 +36,7 @@ class _MainScreenState extends State<MainScreen> {
     _NavItem(icon: AppIcons.dashboard, label: 'لوحة التحكم'),
     _NavItem(icon: AppIcons.courses, label: 'الدورات'),
     _NavItem(icon: AppIcons.certificates, label: 'الشهادات'),
+    _NavItem(icon: Icons.payment, label: 'المدفوعات'),
     _NavItem(icon: AppIcons.settings, label: 'الإعدادات'),
   ];
 
@@ -77,28 +80,13 @@ class _MainScreenState extends State<MainScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // الصف العلوي: الشعار + معلومات المستخدم
+              // الصف العلوي: معلومات المستخدم + الشعار
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
-                    // شعار التطبيق
-                    const Icon(Icons.school, color: AppTheme.yellow, size: 28),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'وصلة',
-                      style: TextStyle(
-                        color: AppTheme.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    // زر الإشعارات
-                    _buildNotificationButton(),
-                    const SizedBox(width: 8),
-                    // معلومات المستخدم
+                    // معلومات المستخدم (يمين)
                     BlocBuilder<AuthBloc, AuthState>(
                       builder: (context, state) {
                         if (state is AuthAuthenticated) {
@@ -107,6 +95,21 @@ class _MainScreenState extends State<MainScreen> {
                         return const SizedBox.shrink();
                       },
                     ),
+                    const SizedBox(width: 8),
+                    // زر الإشعارات (يمين)
+                    _buildNotificationButton(),
+                    const Spacer(),
+                    // شعار التطبيق (يسار)
+                    const Text(
+                      'وصلة',
+                      style: TextStyle(
+                        color: AppTheme.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.school, color: AppTheme.yellow, size: 28),
                   ],
                 ),
               ),
@@ -187,6 +190,8 @@ class _MainScreenState extends State<MainScreen> {
       child: Row(
         children: List.generate(_navItems.length, (i) {
           final active = _currentIndex == i;
+          final isPayments = i == 3; // زر المدفوعات
+
           return Expanded(
             child: InkWell(
               onTap: () => setState(() => _currentIndex = i),
@@ -202,12 +207,51 @@ class _MainScreenState extends State<MainScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      _navItems[i].icon,
-                      size: 18,
-                      color: active
-                          ? AppTheme.yellow
-                          : AppTheme.white.withOpacity(0.6),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          _navItems[i].icon,
+                          size: 18,
+                          color: active
+                              ? AppTheme.yellow
+                              : AppTheme.white.withOpacity(0.6),
+                        ),
+                        // Badge للمدفوعات المعلقة - يظهر فقط عند وجود مدفوعات معلقة
+                        if (isPayments)
+                          FutureBuilder<int>(
+                            future: _getPendingPaymentsCount(),
+                            builder: (context, snapshot) {
+                              final count = snapshot.data ?? 0;
+                              if (count == 0) return const SizedBox.shrink();
+
+                              return Positioned(
+                                right: -6,
+                                top: -4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppTheme.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  child: Text(
+                                    count > 9 ? '9+' : count.toString(),
+                                    style: const TextStyle(
+                                      color: AppTheme.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -242,6 +286,8 @@ class _MainScreenState extends State<MainScreen> {
       case 2:
         return const CertificateScreen();
       case 3:
+        return const PaymentsScreen();
+      case 4:
         return const SettingsScreen();
       default:
         return const DashboardScreen();
@@ -273,7 +319,7 @@ class _MainScreenState extends State<MainScreen> {
             title: const Text('الإعدادات'),
             onTap: () {
               Navigator.pop(context);
-              setState(() => _currentIndex = 3);
+              setState(() => _currentIndex = 4);
             },
           ),
           const Divider(height: 1),
@@ -313,6 +359,24 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
     );
+  }
+
+  // الحصول على عدد المدفوعات المعلقة
+  Future<int> _getPendingPaymentsCount() async {
+    try {
+      final repository = context.read<MainRepository>();
+      final user = await repository.getUser();
+
+      if (user != null) {
+        final payments = await repository.getProviderPayments(user.id);
+        return payments
+            .where((p) => p.status.toString().contains('pending'))
+            .length;
+      }
+      return 0;
+    } catch (e) {
+      return 0;
+    }
   }
 }
 

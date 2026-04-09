@@ -61,6 +61,11 @@ class SettingsService {
             'language': settings.language,
             'notifications_enabled': settings.notificationsEnabled,
             'email_notifications': settings.emailNotifications,
+            'push_notifications': settings.pushNotifications,
+            'notify_new_students': settings.notifyNewStudents,
+            'notify_new_reviews': settings.notifyNewReviews,
+            'notify_new_payments': settings.notifyNewPayments,
+            'auto_save': settings.autoSave,
             'updated_at': DateTime.now().toIso8601String(),
           },
         );

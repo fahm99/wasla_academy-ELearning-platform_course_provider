@@ -25,43 +25,90 @@ class SettingItem extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
 
-    return ListTile(
-      leading: Container(
-        padding: EdgeInsets.all(isMobile ? 8 : 10),
-        decoration: BoxDecoration(
-          color: AppTheme.lightGray,
-          borderRadius: BorderRadius.circular(8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.lightGray.withOpacity(0.5),
+          width: 1,
         ),
-        child: Icon(
-          icon,
-          size: isMobile ? 18 : 20,
-          color: AppTheme.darkBlue,
-        ),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: isMobile ? 14 : 16,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: TextStyle(
-                fontSize: isMobile ? 12 : 14,
-                color: AppTheme.darkGray,
-              ),
-            )
-          : null,
-      trailing: trailing ??
-          Icon(
-            Icons.arrow_forward_ios,
-            size: isMobile ? 14 : 16,
-            color: AppTheme.darkGray,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-      onTap: onTap,
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: EdgeInsets.all(isMobile ? 12 : 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(isMobile ? 10 : 12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.yellow.withOpacity(0.2),
+                        AppTheme.blue.withOpacity(0.1),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: isMobile ? 20 : 22,
+                    color: AppTheme.darkBlue,
+                  ),
+                ),
+                SizedBox(width: isMobile ? 12 : 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: isMobile ? 15 : 16,
+                          fontWeight: FontWeight.w600,
+                          color: textColor ?? AppTheme.darkBlue,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle!,
+                          style: TextStyle(
+                            fontSize: isMobile ? 12 : 13,
+                            color: AppTheme.darkGray.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (trailing != null)
+                  trailing!
+                else if (onTap != null)
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: isMobile ? 16 : 18,
+                    color: AppTheme.darkGray.withOpacity(0.5),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

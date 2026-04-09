@@ -114,13 +114,14 @@ class MainRepository {
     String? phone,
     String? bio,
     String? avatarUrl,
+    String? profileImageUrl,
   }) async {
     return await _authService.updateUserProfile(
       userId: userId,
       name: name,
       phone: phone,
       bio: bio,
-      avatarUrl: avatarUrl,
+      avatarUrl: avatarUrl ?? profileImageUrl,
     );
   }
 
@@ -756,5 +757,23 @@ class MainRepository {
 
   Future<void> updateSettings(AppSettings settings) async {
     await _settingsService.updateSettings(settings);
+  }
+
+  // ============================================
+  // Profile Image Management
+  // ============================================
+
+  Future<String> uploadProfileImage({
+    required String userId,
+    required String imagePath,
+  }) async {
+    return await _storageService.uploadProfileImage(
+      userId: userId,
+      imagePath: imagePath,
+    );
+  }
+
+  Future<void> deleteProfileImage({required String userId}) async {
+    await _storageService.deleteProfileImage(userId: userId);
   }
 }

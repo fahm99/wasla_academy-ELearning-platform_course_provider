@@ -85,3 +85,30 @@ class SettingsImportRequested extends SettingsEvent {
   @override
   List<Object?> get props => [data];
 }
+
+class SettingsNotifyNewStudentsToggled extends SettingsEvent {
+  final bool enabled;
+
+  const SettingsNotifyNewStudentsToggled({required this.enabled});
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
+class SettingsNotifyNewReviewsToggled extends SettingsEvent {
+  final bool enabled;
+
+  const SettingsNotifyNewReviewsToggled({required this.enabled});
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
+class SettingsNotifyNewPaymentsToggled extends SettingsEvent {
+  final bool enabled;
+
+  const SettingsNotifyNewPaymentsToggled({required this.enabled});
+
+  @override
+  List<Object?> get props => [enabled];
+}

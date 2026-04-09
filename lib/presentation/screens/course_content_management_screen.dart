@@ -411,7 +411,7 @@ class _CourseContentManagementScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.folder_open,
             size: 64,
             color: AppTheme.mediumGray,
@@ -444,7 +444,7 @@ class _CourseContentManagementScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.video_library,
             size: 64,
             color: AppTheme.mediumGray,
@@ -514,7 +514,7 @@ class _CourseContentManagementScreenState
   Future<void> _addNewModule() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => _ModuleDialog(),
+      builder: (context) => const _ModuleDialog(),
     );
 
     if (result != null) {

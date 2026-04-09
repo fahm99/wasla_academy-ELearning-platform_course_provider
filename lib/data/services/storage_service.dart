@@ -164,4 +164,53 @@ class StorageService {
       return null;
     }
   }
+
+  // ============================================
+  // Profile Image Management
+  // ============================================
+
+  Future<String> uploadProfileImage({
+    required String userId,
+    required String imagePath,
+  }) async {
+    try {
+      final file = File(imagePath);
+      final fileName =
+          'profiles/$userId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final fileBytes = await file.readAsBytes();
+
+      final url = await _supabaseService.uploadFile(
+        SupabaseConfig.avatarsBucket,
+        fileName,
+        fileBytes,
+      );
+
+      if (url == null) {
+        throw Exception('فشل رفع الصورة');
+      }
+
+      return url;
+    } catch (e) {
+      throw Exception('خطأ في رفع صورة الملف الشخصي: ${e.toString()}');
+    }
+  }
+
+  Future<void> deleteProfileImage({required String userId}) async {
+    try {
+      // حذف جميع صور المستخدم من المجلد
+      final files = await listFiles(
+        bucket: SupabaseConfig.avatarsBucket,
+        path: 'profiles/$userId',
+      );
+
+      for (final file in files) {
+        await deleteFile(
+          bucket: SupabaseConfig.avatarsBucket,
+          filePath: 'profiles/$userId/$file',
+        );
+      }
+    } catch (e) {
+      throw Exception('خطأ في حذف صورة الملف الشخصي: ${e.toString()}');
+    }
+  }
 }
