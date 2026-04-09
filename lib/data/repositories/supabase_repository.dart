@@ -6,8 +6,6 @@ import 'package:course_provider/data/services/enrollment_service.dart';
 import 'package:course_provider/data/services/storage_service.dart';
 import 'package:course_provider/data/services/supabase_service.dart';
 
-
-
 /// Repository الرئيسي للتعامل مع Supabase
 class SupabaseRepository {
   final SupabaseService _supabaseService = SupabaseService();
@@ -59,30 +57,12 @@ class SupabaseRepository {
   // الكورسات
   // ============================================
 
-  Future<List<Course>> getPublishedCourses({
-    int? limit,
-    int? offset,
-    String? category,
-    String? level,
-  }) async {
-    return await _courseService.getPublishedCourses(
-      limit: limit,
-      offset: offset,
-      category: category,
-      level: level,
-    );
-  }
-
   Future<List<Course>> getProviderCourses(String providerId) async {
     return await _courseService.getProviderCourses(providerId);
   }
 
   Future<Course?> getCourseDetails(String courseId) async {
     return await _courseService.getCourseDetails(courseId);
-  }
-
-  Future<List<Course>> searchCourses(String query) async {
-    return await _courseService.searchCourses(query);
   }
 
   Future<Course?> createCourse({
@@ -161,10 +141,6 @@ class SupabaseRepository {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getStudentCourses(String studentId) async {
-    return await _enrollmentService.getStudentCourses(studentId);
-  }
-
   Future<List<Map<String, dynamic>>> getCourseStudents(String courseId) async {
     return await _enrollmentService.getCourseStudents(courseId);
   }
@@ -187,10 +163,6 @@ class SupabaseRepository {
 
   Future<bool> completeCourse(String studentId, String courseId) async {
     return await _enrollmentService.completeCourse(studentId, courseId);
-  }
-
-  Future<bool> dropCourse(String studentId, String courseId) async {
-    return await _enrollmentService.dropCourse(studentId, courseId);
   }
 
   // ============================================

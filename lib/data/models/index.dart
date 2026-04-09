@@ -10,5 +10,4 @@ export 'certificate.dart';
 export 'student.dart'; // Enrollment
 export 'notification.dart';
 export 'payment.dart';
-export 'review.dart';
 export 'app_settings.dart';

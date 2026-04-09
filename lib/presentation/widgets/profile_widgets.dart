@@ -163,14 +163,7 @@ class UserProfileWidget extends StatelessWidget {
   }
 
   String _getUserTypeText(UserType type) {
-    switch (type) {
-      case UserType.provider:
-        return 'مقدم خدمة';
-      case UserType.student:
-        return 'طالب';
-      case UserType.admin:
-        return 'مدير';
-    }
+    return 'مقدم خدمة';
   }
 }
 
@@ -260,14 +253,7 @@ class ProfileHeader extends StatelessWidget {
   }
 
   String _getUserTypeText(UserType type) {
-    switch (type) {
-      case UserType.provider:
-        return 'مقدم خدمة تعليمية';
-      case UserType.student:
-        return 'طالب';
-      case UserType.admin:
-        return 'مدير النظام';
-    }
+    return 'مقدم خدمة تعليمية';
   }
 }
 

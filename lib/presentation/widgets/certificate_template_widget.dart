@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:course_provider/data/models/certificate/signature_data.dart';
 
 class CertificateTemplateWidget extends StatefulWidget {
   final String studentName;
@@ -45,15 +46,7 @@ class CertificateTemplateWidget extends StatefulWidget {
       CertificateTemplateWidgetState();
 }
 
-class SignatureData {
-  final String name;
-  final String title;
-
-  const SignatureData({
-    required this.name,
-    required this.title,
-  });
-}
+// SignatureData moved to lib/data/models/certificate/signature_data.dart
 
 class CertificateTemplateWidgetState extends State<CertificateTemplateWidget> {
   final ScreenshotController screenshotController = ScreenshotController();

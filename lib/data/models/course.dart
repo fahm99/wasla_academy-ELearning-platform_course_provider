@@ -162,6 +162,6 @@ class Course extends Equatable {
   }
 }
 
-enum CourseStatus { draft, pending_review, published, archived }
+enum CourseStatus { draft, pendingReview, published, archived }
 
 enum CourseLevel { beginner, intermediate, advanced }

@@ -222,7 +222,7 @@ class FilterDialog extends StatelessWidget {
     switch (status) {
       case CourseStatus.draft:
         return 'مسودة';
-      case CourseStatus.pending_review:
+      case CourseStatus.pendingReview:
         return 'قيد المراجعة';
       case CourseStatus.published:
         return 'منشورة';

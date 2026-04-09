@@ -23,21 +23,6 @@ class PaymentService {
     }
   }
 
-  /// الحصول على مدفوعات الطالب
-  Future<List<Payment>> getStudentPayments(String studentId) async {
-    try {
-      final data = await _supabaseService.query(
-        SupabaseConfig.paymentsTable,
-        filters: {'student_id': studentId},
-        orderBy: 'created_at',
-        ascending: false,
-      );
-      return data.map((e) => Payment.fromJson(e)).toList();
-    } catch (e) {
-      return [];
-    }
-  }
-
   /// الحصول على مدفوعات الكورس
   Future<List<Payment>> getCoursePayments(String courseId) async {
     try {
@@ -50,64 +35,6 @@ class PaymentService {
       return data.map((e) => Payment.fromJson(e)).toList();
     } catch (e) {
       return [];
-    }
-  }
-
-  /// إنشاء دفعة جديدة
-  Future<Payment?> createPayment({
-    required String studentId,
-    required String courseId,
-    required String providerId,
-    required double amount,
-    String currency = 'SAR',
-    required PaymentMethod paymentMethod,
-    String? transactionId,
-  }) async {
-    try {
-      final data = await _supabaseService.insert(
-        SupabaseConfig.paymentsTable,
-        {
-          'student_id': studentId,
-          'course_id': courseId,
-          'provider_id': providerId,
-          'amount': amount,
-          'currency': currency,
-          'payment_method': paymentMethod.name,
-          'transaction_id': transactionId,
-          'status': 'pending',
-        },
-      );
-      return Payment.fromJson(data);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// تحديث حالة الدفعة
-  Future<bool> updatePaymentStatus({
-    required String paymentId,
-    required PaymentStatus status,
-    String? transactionId,
-  }) async {
-    try {
-      final updateData = <String, dynamic>{
-        'status': status.name,
-      };
-      if (transactionId != null) {
-        updateData['transaction_id'] = transactionId;
-      }
-      if (status == PaymentStatus.completed) {
-        updateData['payment_date'] = DateTime.now().toIso8601String();
-      }
-
-      await _supabaseService.update(
-        SupabaseConfig.paymentsTable,
-        paymentId,
-        updateData,
-      );
-      return true;
-    } catch (e) {
-      return false;
     }
   }
 

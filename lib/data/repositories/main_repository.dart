@@ -1,5 +1,4 @@
 import 'package:course_provider/data/models/app_settings.dart';
-import 'package:course_provider/data/models/certificate.dart';
 import 'package:course_provider/data/models/course.dart';
 import 'package:course_provider/data/models/exam.dart';
 import 'package:course_provider/data/models/lesson.dart';
@@ -7,7 +6,7 @@ import 'package:course_provider/data/models/module.dart';
 import 'package:course_provider/data/models/notification.dart';
 import 'package:course_provider/data/models/payment.dart';
 import 'package:course_provider/data/models/student.dart';
-import 'package:course_provider/data/models/user.dart';
+import 'package:course_provider/data/models/user.dart' as models;
 import 'package:course_provider/data/services/auth_service.dart';
 import 'package:course_provider/data/services/certificate_service.dart';
 import 'package:course_provider/data/services/course_service.dart';
@@ -18,7 +17,7 @@ import 'package:course_provider/data/services/module_service.dart';
 import 'package:course_provider/data/services/notification_service.dart';
 import 'package:course_provider/data/services/settings_service.dart';
 import 'package:course_provider/data/services/storage_service.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/payment_service.dart';
 
@@ -30,11 +29,18 @@ class MainRepository {
   final LessonService _lessonService = LessonService();
   final ExamService _examService = ExamService();
   final EnrollmentService _enrollmentService = EnrollmentService();
-  final CertificateService _certificateService = CertificateService();
+  late final CertificateService _certificateService;
   final NotificationService _notificationService = NotificationService();
   final PaymentService _paymentService = PaymentService();
   final SettingsService _settingsService = SettingsService();
   final StorageService _storageService = StorageService();
+
+  MainRepository() {
+    _certificateService = CertificateService(_authService.supabase);
+  }
+
+  /// الوصول إلى Supabase client
+  SupabaseClient get supabase => _authService.supabase;
 
   // ============================================
   // المصادقة
@@ -97,7 +103,7 @@ class MainRepository {
     return _authService.isLoggedIn();
   }
 
-  Future<User?> getUser() async {
+  Future<models.User?> getUser() async {
     return await _authService.getCurrentUser();
   }
 
@@ -173,10 +179,6 @@ class MainRepository {
     return await _courseService.unpublishCourse(courseId);
   }
 
-  Future<List<Course>> searchCourses(String query) async {
-    return await _courseService.searchCourses(query);
-  }
-
   // ============================================
   // الوحدات
   // ============================================
@@ -219,6 +221,10 @@ class MainRepository {
 
   Future<bool> deleteModule(String moduleId) async {
     return await _moduleService.deleteModule(moduleId);
+  }
+
+  Future<bool> reorderModules(List<String> moduleIds) async {
+    return await _moduleService.reorderModules(moduleIds);
   }
 
   // ============================================
@@ -289,6 +295,10 @@ class MainRepository {
 
   Future<bool> deleteLesson(String lessonId) async {
     return await _lessonService.deleteLesson(lessonId);
+  }
+
+  Future<bool> reorderLessons(List<String> lessonIds) async {
+    return await _lessonService.reorderLessons(lessonIds);
   }
 
   // ============================================
@@ -403,29 +413,13 @@ class MainRepository {
     return allEnrollments;
   }
 
-  Future<Enrollment?> getStudentById(String studentId) async {
-    // هذه الدالة تحتاج تعديل - يجب الحصول على بيانات المستخدم
-    return null;
+  Future<List<Map<String, dynamic>>> getCourseStudents(String courseId) async {
+    return await _enrollmentService.getCourseStudents(courseId);
   }
 
-  Future<bool> addStudent(Enrollment student) async {
-    return await _enrollmentService.enrollCourse(
-      studentId: student.studentId,
-      courseId: student.courseId,
-    );
-  }
-
-  Future<bool> updateStudent(Enrollment student) async {
-    return await _enrollmentService.updateProgress(
-      studentId: student.studentId,
-      courseId: student.courseId,
-      percentage: student.completionPercentage,
-    );
-  }
-
-  Future<List<Enrollment>> getCourseStudents(String courseId) async {
-    final data = await _enrollmentService.getCourseStudents(courseId);
-    return data.map((e) => Enrollment.fromJson(e)).toList();
+  Future<List<Map<String, dynamic>>> getCourseStudentsWithDetails(
+      String courseId) async {
+    return await _enrollmentService.getCourseStudentsWithDetails(courseId);
   }
 
   Future<bool> enrollStudent({
@@ -446,40 +440,70 @@ class MainRepository {
   // الشهادات
   // ============================================
 
-  Future<List<Certificate>> getCertificates() async {
+  Future<List<Map<String, dynamic>>> getCertificates() async {
     final user = await getUser();
     if (user == null) return [];
     return await _certificateService.getProviderCertificates(user.id);
   }
 
-  Future<Certificate?> getCertificateById(String certificateId) async {
-    return await _certificateService.getCertificate(certificateId);
+  Future<Map<String, dynamic>?> getCertificateById(String certificateId) async {
+    // استخدام verify certificate للحصول على الشهادة برقمها
+    return await _certificateService.verifyCertificate(certificateId);
   }
 
-  Future<bool> addCertificate(Certificate certificate) async {
-    final created = await _certificateService.issueCertificate(
-      courseId: certificate.courseId,
-      studentId: certificate.studentId,
-      providerId: certificate.providerId,
-    );
-    return created != null;
-  }
-
-  Future<bool> updateCertificate(Certificate certificate) async {
-    // الشهادات لا يتم تحديثها عادةً
-    return false;
-  }
-
-  Future<Certificate?> issueCertificate({
+  Future<Map<String, dynamic>> addCertificate({
     required String courseId,
     required String studentId,
     required String providerId,
+    Map<String, dynamic>? templateDesign,
   }) async {
     return await _certificateService.issueCertificate(
       courseId: courseId,
       studentId: studentId,
       providerId: providerId,
+      templateDesign: templateDesign,
     );
+  }
+
+  Future<Map<String, dynamic>> issueCertificate({
+    required String courseId,
+    required String studentId,
+    required String providerId,
+    Map<String, dynamic>? templateDesign,
+  }) async {
+    return await _certificateService.issueCertificate(
+      courseId: courseId,
+      studentId: studentId,
+      providerId: providerId,
+      templateDesign: templateDesign,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> issueCertificates({
+    required String courseId,
+    required List<String> studentIds,
+    required String providerId,
+    Map<String, dynamic>? templateDesign,
+  }) async {
+    return await _certificateService.issueCertificates(
+      courseId: courseId,
+      studentIds: studentIds,
+      providerId: providerId,
+      templateDesign: templateDesign,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getCourseCertificates(
+      String courseId) async {
+    return await _certificateService.getCourseCertificates(courseId);
+  }
+
+  Future<void> revokeCertificate(String certificateId) async {
+    return await _certificateService.revokeCertificate(certificateId);
+  }
+
+  Future<void> restoreCertificate(String certificateId) async {
+    return await _certificateService.restoreCertificate(certificateId);
   }
 
   // ============================================
@@ -502,6 +526,66 @@ class MainRepository {
     return await _notificationService.markAsRead(notificationId);
   }
 
+  Future<bool> markAllNotificationsAsRead() async {
+    final user = await getUser();
+    if (user == null) return false;
+    return await _notificationService.markAllAsRead(user.id);
+  }
+
+  Future<bool> deleteNotification(String notificationId) async {
+    return await _notificationService.deleteNotification(notificationId);
+  }
+
+  Future<void> notifyNewStudent({
+    required String providerId,
+    required String studentName,
+    required String courseName,
+  }) async {
+    await _notificationService.notifyNewStudent(
+      providerId: providerId,
+      studentName: studentName,
+      courseName: courseName,
+    );
+  }
+
+  Future<void> notifyCourseCompleted({
+    required String providerId,
+    required String studentName,
+    required String courseName,
+  }) async {
+    await _notificationService.notifyCourseCompleted(
+      providerId: providerId,
+      studentName: studentName,
+      courseName: courseName,
+    );
+  }
+
+  Future<void> notifyNewReview({
+    required String providerId,
+    required String studentName,
+    required String courseName,
+    required int rating,
+  }) async {
+    await _notificationService.notifyNewReview(
+      providerId: providerId,
+      studentName: studentName,
+      courseName: courseName,
+      rating: rating,
+    );
+  }
+
+  Future<void> notifyNewPayment({
+    required String providerId,
+    required double amount,
+    required String courseName,
+  }) async {
+    await _notificationService.notifyNewPayment(
+      providerId: providerId,
+      amount: amount,
+      courseName: courseName,
+    );
+  }
+
   // ============================================
   // المدفوعات
   // ============================================
@@ -512,10 +596,30 @@ class MainRepository {
     return await _paymentService.getProviderPayments(user.id);
   }
 
+  Future<List<Payment>> getProviderPayments(String providerId) async {
+    return await _paymentService.getProviderPayments(providerId);
+  }
+
   Future<double> getTotalEarnings() async {
     final user = await getUser();
     if (user == null) return 0;
     return await _paymentService.getTotalEarnings(user.id);
+  }
+
+  Future<Map<String, double>> getEarningsByCourse(String providerId) async {
+    return await _paymentService.getEarningsByCourse(providerId);
+  }
+
+  Future<Map<String, double>> getEarningsByPeriod(
+    String providerId, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    return await _paymentService.getEarningsByPeriod(
+      providerId,
+      startDate: startDate,
+      endDate: endDate,
+    );
   }
 
   // ============================================

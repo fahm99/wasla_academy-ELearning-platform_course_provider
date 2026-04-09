@@ -27,7 +27,32 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateLoading());
-      final certificates = await repository.getCertificates();
+      final certificatesData = await repository.getCertificates();
+
+      // تحويل Map إلى Certificate objects
+      final certificates = certificatesData.map((data) {
+        return Certificate(
+          id: data['id'] ?? '',
+          courseId: data['course_id'] ?? '',
+          studentId: data['student_id'] ?? '',
+          providerId: data['provider_id'] ?? '',
+          certificateNumber: data['certificate_number'] ?? '',
+          issueDate: data['issue_date'] != null
+              ? DateTime.parse(data['issue_date'])
+              : DateTime.now(),
+          expiryDate: data['expiry_date'] != null
+              ? DateTime.parse(data['expiry_date'])
+              : null,
+          certificateUrl: data['certificate_url'],
+          status: data['status'] == 'revoked'
+              ? CertificateStatus.revoked
+              : CertificateStatus.issued,
+          createdAt: data['created_at'] != null
+              ? DateTime.parse(data['created_at'])
+              : DateTime.now(),
+        );
+      }).toList();
+
       emit(CertificateLoaded(
         certificates: certificates,
         filteredCertificates: certificates,
@@ -50,30 +75,43 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
         return;
       }
 
-      // التحقق من عدم وجود شهادة مسبقة
-      final existingCertificates = await repository.getCertificates();
-      final alreadyIssued = existingCertificates.any((cert) =>
-          cert.studentId == event.studentId && cert.courseId == event.courseId);
-
-      if (alreadyIssued) {
-        emit(const CertificateError(
-            message: 'تم إصدار شهادة لهذا الطالب في هذه الدورة مسبقاً'));
-        return;
-      }
-
       // إصدار الشهادة عبر Repository
-      final certificate = await repository.issueCertificate(
+      final certificateData = await repository.issueCertificate(
         courseId: event.courseId,
         studentId: event.studentId,
         providerId: course.providerId,
       );
 
-      if (certificate == null) {
+      if (certificateData.isEmpty) {
         emit(const CertificateError(message: 'حدث خطأ في إصدار الشهادة'));
         return;
       }
 
-      final certificates = await repository.getCertificates();
+      // إعادة تحميل الشهادات
+      final certificatesData = await repository.getCertificates();
+      final certificates = certificatesData.map((data) {
+        return Certificate(
+          id: data['id'] ?? '',
+          courseId: data['course_id'] ?? '',
+          studentId: data['student_id'] ?? '',
+          providerId: data['provider_id'] ?? '',
+          certificateNumber: data['certificate_number'] ?? '',
+          issueDate: data['issue_date'] != null
+              ? DateTime.parse(data['issue_date'])
+              : DateTime.now(),
+          expiryDate: data['expiry_date'] != null
+              ? DateTime.parse(data['expiry_date'])
+              : null,
+          certificateUrl: data['certificate_url'],
+          status: data['status'] == 'revoked'
+              ? CertificateStatus.revoked
+              : CertificateStatus.issued,
+          createdAt: data['created_at'] != null
+              ? DateTime.parse(data['created_at'])
+              : DateTime.now(),
+        );
+      }).toList();
+
       emit(CertificateOperationSuccess(
         message: 'تم إصدار الشهادة بنجاح',
         certificates: certificates,
@@ -83,7 +121,7 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
         filteredCertificates: certificates,
       ));
     } catch (e) {
-      emit(const CertificateError(message: 'حدث خطأ في إصدار الشهادة'));
+      emit(CertificateError(message: 'حدث خطأ في إصدار الشهادة: $e'));
     }
   }
 
@@ -93,25 +131,45 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateRevoking());
-      final certificate =
-          await repository.getCertificateById(event.certificateId);
-      if (certificate != null) {
-        final updated = certificate.copyWith(status: CertificateStatus.revoked);
-        await repository.updateCertificate(updated);
-        final certificates = await repository.getCertificates();
-        emit(CertificateOperationSuccess(
-          message: 'تم إلغاء الشهادة بنجاح',
-          certificates: certificates,
-        ));
-        emit(CertificateLoaded(
-          certificates: certificates,
-          filteredCertificates: certificates,
-        ));
-      } else {
-        emit(const CertificateError(message: 'لم يتم العثور على الشهادة'));
-      }
+
+      // إلغاء الشهادة
+      await repository.revokeCertificate(event.certificateId);
+
+      // إعادة تحميل الشهادات
+      final certificatesData = await repository.getCertificates();
+      final certificates = certificatesData.map((data) {
+        return Certificate(
+          id: data['id'] ?? '',
+          courseId: data['course_id'] ?? '',
+          studentId: data['student_id'] ?? '',
+          providerId: data['provider_id'] ?? '',
+          certificateNumber: data['certificate_number'] ?? '',
+          issueDate: data['issue_date'] != null
+              ? DateTime.parse(data['issue_date'])
+              : DateTime.now(),
+          expiryDate: data['expiry_date'] != null
+              ? DateTime.parse(data['expiry_date'])
+              : null,
+          certificateUrl: data['certificate_url'],
+          status: data['status'] == 'revoked'
+              ? CertificateStatus.revoked
+              : CertificateStatus.issued,
+          createdAt: data['created_at'] != null
+              ? DateTime.parse(data['created_at'])
+              : DateTime.now(),
+        );
+      }).toList();
+
+      emit(CertificateOperationSuccess(
+        message: 'تم إلغاء الشهادة بنجاح',
+        certificates: certificates,
+      ));
+      emit(CertificateLoaded(
+        certificates: certificates,
+        filteredCertificates: certificates,
+      ));
     } catch (e) {
-      emit(const CertificateError(message: 'حدث خطأ في إلغاء الشهادة'));
+      emit(CertificateError(message: 'حدث خطأ في إلغاء الشهادة: $e'));
     }
   }
 
@@ -121,25 +179,45 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateRevoking());
-      final certificate =
-          await repository.getCertificateById(event.certificateId);
-      if (certificate != null) {
-        final updated = certificate.copyWith(status: CertificateStatus.issued);
-        await repository.updateCertificate(updated);
-        final certificates = await repository.getCertificates();
-        emit(CertificateOperationSuccess(
-          message: 'تم استعادة الشهادة بنجاح',
-          certificates: certificates,
-        ));
-        emit(CertificateLoaded(
-          certificates: certificates,
-          filteredCertificates: certificates,
-        ));
-      } else {
-        emit(const CertificateError(message: 'لم يتم العثور على الشهادة'));
-      }
+
+      // استعادة الشهادة
+      await repository.restoreCertificate(event.certificateId);
+
+      // إعادة تحميل الشهادات
+      final certificatesData = await repository.getCertificates();
+      final certificates = certificatesData.map((data) {
+        return Certificate(
+          id: data['id'] ?? '',
+          courseId: data['course_id'] ?? '',
+          studentId: data['student_id'] ?? '',
+          providerId: data['provider_id'] ?? '',
+          certificateNumber: data['certificate_number'] ?? '',
+          issueDate: data['issue_date'] != null
+              ? DateTime.parse(data['issue_date'])
+              : DateTime.now(),
+          expiryDate: data['expiry_date'] != null
+              ? DateTime.parse(data['expiry_date'])
+              : null,
+          certificateUrl: data['certificate_url'],
+          status: data['status'] == 'revoked'
+              ? CertificateStatus.revoked
+              : CertificateStatus.issued,
+          createdAt: data['created_at'] != null
+              ? DateTime.parse(data['created_at'])
+              : DateTime.now(),
+        );
+      }).toList();
+
+      emit(CertificateOperationSuccess(
+        message: 'تم استعادة الشهادة بنجاح',
+        certificates: certificates,
+      ));
+      emit(CertificateLoaded(
+        certificates: certificates,
+        filteredCertificates: certificates,
+      ));
     } catch (e) {
-      emit(const CertificateError(message: 'حدث خطأ في استعادة الشهادة'));
+      emit(CertificateError(message: 'حدث خطأ في استعادة الشهادة: $e'));
     }
   }
 
@@ -198,8 +276,8 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
                 (cert.studentId.contains(currentState.searchQuery!)) ||
                 (cert.courseId.contains(currentState.searchQuery!)) ||
                 (cert.certificateNumber
-                        .toLowerCase()
-                        .contains(currentState.searchQuery!.toLowerCase())))
+                    .toLowerCase()
+                    .contains(currentState.searchQuery!.toLowerCase())))
             .toList();
       }
 
@@ -269,17 +347,18 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateDownloading());
-      final certificate =
+      final certificateData =
           await repository.getCertificateById(event.certificateId);
-      if (certificate != null) {
-        final filePath = certificate.certificateUrl ??
-            '/downloads/certificate_${certificate.id}.pdf';
+
+      if (certificateData != null && certificateData.isNotEmpty) {
+        final filePath = certificateData['certificate_url'] ??
+            '/downloads/certificate_${certificateData['id']}.pdf';
         emit(CertificateDownloaded(filePath: filePath));
       } else {
         emit(const CertificateError(message: 'لم يتم العثور على الشهادة'));
       }
     } catch (e) {
-      emit(const CertificateError(message: 'حدث خطأ في تحميل الشهادة'));
+      emit(CertificateError(message: 'حدث خطأ في تحميل الشهادة: $e'));
     }
   }
 
@@ -289,17 +368,18 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateSharing());
-      final certificate =
+      final certificateData =
           await repository.getCertificateById(event.certificateId);
-      if (certificate != null) {
+
+      if (certificateData != null && certificateData.isNotEmpty) {
         final shareUrl =
-            'https://wasla.com/certificates/verify/${certificate.certificateNumber}';
+            'https://wasla.com/certificates/verify/${certificateData['certificate_number']}';
         emit(CertificateShared(shareUrl: shareUrl));
       } else {
         emit(const CertificateError(message: 'لم يتم العثور على الشهادة'));
       }
     } catch (e) {
-      emit(const CertificateError(message: 'حدث خطأ في مشاركة الشهادة'));
+      emit(CertificateError(message: 'حدث خطأ في مشاركة الشهادة: $e'));
     }
   }
 
@@ -309,16 +389,38 @@ class CertificateBloc extends Bloc<CertificateEvent, CertificateState> {
   ) async {
     try {
       emit(CertificateVerifying());
-      final certificate =
+      final certificateData =
           await repository.getCertificateById(event.certificateId);
-      if (certificate != null) {
+
+      if (certificateData != null && certificateData.isNotEmpty) {
+        final certificate = Certificate(
+          id: certificateData['id'] ?? '',
+          courseId: certificateData['course_id'] ?? '',
+          studentId: certificateData['student_id'] ?? '',
+          providerId: certificateData['provider_id'] ?? '',
+          certificateNumber: certificateData['certificate_number'] ?? '',
+          issueDate: certificateData['issue_date'] != null
+              ? DateTime.parse(certificateData['issue_date'])
+              : DateTime.now(),
+          expiryDate: certificateData['expiry_date'] != null
+              ? DateTime.parse(certificateData['expiry_date'])
+              : null,
+          certificateUrl: certificateData['certificate_url'],
+          status: certificateData['status'] == 'revoked'
+              ? CertificateStatus.revoked
+              : CertificateStatus.issued,
+          createdAt: certificateData['created_at'] != null
+              ? DateTime.parse(certificateData['created_at'])
+              : DateTime.now(),
+        );
+
         final isValid = certificate.status == CertificateStatus.issued;
         emit(CertificateVerified(certificate: certificate, isValid: isValid));
       } else {
         emit(const CertificateError(message: 'لم يتم العثور على الشهادة'));
       }
     } catch (e) {
-      emit(const CertificateError(message: 'حدث خطأ في التحقق من الشهادة'));
+      emit(CertificateError(message: 'حدث خطأ في التحقق من الشهادة: $e'));
     }
   }
 

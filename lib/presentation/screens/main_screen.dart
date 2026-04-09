@@ -15,7 +15,7 @@ import '../blocs/settings/settings_bloc.dart';
 import '../blocs/settings/settings_event.dart';
 import '../widgets/index.dart';
 import 'course_screen.dart';
-import 'certificate_screen.dart';
+import 'certificate/certificate_screen.dart';
 import 'settings_screen.dart';
 import 'dashboard_screen.dart';
 

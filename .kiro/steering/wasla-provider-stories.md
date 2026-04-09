@@ -239,8 +239,7 @@ inclusion: manual
 ```
 - Multiple Choice (اختيار من متعدد)
 - True/False (صح/خطأ)
-- Essay (مقالي)
-- Short Answer (إجابة قصيرة)
+
 ```
 
 **المتطلبات:**

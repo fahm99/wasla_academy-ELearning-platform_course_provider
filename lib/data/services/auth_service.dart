@@ -7,6 +7,9 @@ import '../../core/config/supabase_config.dart';
 class AuthService {
   final SupabaseService _supabaseService = SupabaseService();
 
+  /// الوصول إلى Supabase client
+  SupabaseClient get supabase => _supabaseService.client;
+
   /// التسجيل مع تحديد نوع المستخدم
   Future<Map<String, dynamic>> registerWithResult({
     required String email,

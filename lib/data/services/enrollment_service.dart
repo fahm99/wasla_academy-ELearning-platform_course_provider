@@ -45,19 +45,30 @@ class EnrollmentService {
     }
   }
 
-  /// الحصول على كورسات الطالب
-  Future<List<Map<String, dynamic>>> getStudentCourses(String studentId) async {
+  /// الحصول على طلاب الكورس مع بياناتهم الكاملة
+  Future<List<Map<String, dynamic>>> getCourseStudentsWithDetails(
+      String courseId) async {
     try {
-      final data = await _supabaseService.query(
-        SupabaseConfig.enrollmentsTable,
-        filters: {'student_id': studentId},
-        orderBy: 'enrollment_date',
-        ascending: false,
-      );
+      final supabase = _supabaseService.client;
 
-      return data;
+      final data = await supabase
+          .from('enrollments')
+          .select('''
+            *,
+            users!enrollments_student_id_fkey(
+              id,
+              name,
+              email,
+              avatar_url,
+              phone
+            )
+          ''')
+          .eq('course_id', courseId)
+          .order('enrollment_date', ascending: false);
+
+      return List<Map<String, dynamic>>.from(data);
     } catch (e) {
-      print('❌ خطأ في الحصول على كورسات الطالب: $e');
+      print('❌ خطأ في الحصول على طلاب الكورس: $e');
       return [];
     }
   }
@@ -180,72 +191,6 @@ class EnrollmentService {
     }
   }
 
-  /// ترك الكورس
-  Future<bool> dropCourse(String studentId, String courseId) async {
-    try {
-      final enrollments = await _supabaseService.query(
-        SupabaseConfig.enrollmentsTable,
-        filters: {
-          'student_id': studentId,
-          'course_id': courseId,
-        },
-      );
-
-      if (enrollments.isEmpty) return false;
-
-      final enrollmentId = enrollments[0]['id'];
-
-      await _supabaseService.update(
-        SupabaseConfig.enrollmentsTable,
-        enrollmentId,
-        {'status': 'dropped'},
-      );
-
-      print('✅ تم ترك الكورس بنجاح');
-      return true;
-    } catch (e) {
-      print('❌ خطأ في ترك الكورس: $e');
-      return false;
-    }
-  }
-
-  /// الحصول على حالة التسجيل
-  Future<String?> getEnrollmentStatus(String studentId, String courseId) async {
-    try {
-      final data = await _supabaseService.query(
-        SupabaseConfig.enrollmentsTable,
-        filters: {
-          'student_id': studentId,
-          'course_id': courseId,
-        },
-      );
-
-      if (data.isEmpty) return null;
-      return data[0]['status'];
-    } catch (e) {
-      print('❌ خطأ في الحصول على حالة التسجيل: $e');
-      return null;
-    }
-  }
-
-  /// التحقق من التسجيل
-  Future<bool> isEnrolled(String studentId, String courseId) async {
-    try {
-      final data = await _supabaseService.query(
-        SupabaseConfig.enrollmentsTable,
-        filters: {
-          'student_id': studentId,
-          'course_id': courseId,
-        },
-      );
-
-      return data.isNotEmpty;
-    } catch (e) {
-      print('❌ خطأ في التحقق من التسجيل: $e');
-      return false;
-    }
-  }
-
   /// الحصول على عدد الطلاب المسجلين
   Future<int> getEnrolledStudentsCount(String courseId) async {
     try {
@@ -256,56 +201,6 @@ class EnrollmentService {
     } catch (e) {
       print('❌ خطأ في الحصول على عدد الطلاب: $e');
       return 0;
-    }
-  }
-
-  /// الحصول على عدد الكورسات المسجلة
-  Future<int> getEnrolledCoursesCount(String studentId) async {
-    try {
-      return await _supabaseService.count(
-        SupabaseConfig.enrollmentsTable,
-        filters: {'student_id': studentId},
-      );
-    } catch (e) {
-      print('❌ خطأ في الحصول على عدد الكورسات: $e');
-      return 0;
-    }
-  }
-
-  /// الحصول على الكورسات المكتملة
-  Future<List<Map<String, dynamic>>> getCompletedCourses(
-      String studentId) async {
-    try {
-      final data = await _supabaseService.query(
-        SupabaseConfig.enrollmentsTable,
-        filters: {
-          'student_id': studentId,
-          'status': 'completed',
-        },
-      );
-
-      return data;
-    } catch (e) {
-      print('❌ خطأ في الحصول على الكورسات المكتملة: $e');
-      return [];
-    }
-  }
-
-  /// الحصول على الكورسات النشطة
-  Future<List<Map<String, dynamic>>> getActiveCourses(String studentId) async {
-    try {
-      final data = await _supabaseService.query(
-        SupabaseConfig.enrollmentsTable,
-        filters: {
-          'student_id': studentId,
-          'status': 'active',
-        },
-      );
-
-      return data;
-    } catch (e) {
-      print('❌ خطأ في الحصول على الكورسات النشطة: $e');
-      return [];
     }
   }
 

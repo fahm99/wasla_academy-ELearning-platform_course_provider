@@ -1,40 +1,11 @@
 import 'package:course_provider/data/services/supabase_service.dart';
 import '../models/course.dart';
 import '../../core/config/supabase_config.dart';
+import '../../core/utils/logger.dart';
 
 /// خدمة إدارة الكورسات
 class CourseService {
   final SupabaseService _supabaseService = SupabaseService();
-
-  /// الحصول على جميع الكورسات المنشورة
-  Future<List<Course>> getPublishedCourses({
-    int? limit,
-    int? offset,
-    String? category,
-    String? level,
-  }) async {
-    try {
-      final filters = {
-        'status': 'published',
-        if (category != null) 'category': category,
-        if (level != null) 'level': level,
-      };
-
-      final data = await _supabaseService.query(
-        SupabaseConfig.coursesTable,
-        filters: filters,
-        orderBy: 'created_at',
-        ascending: false,
-        limit: limit ?? 10,
-        offset: offset ?? 0,
-      );
-
-      return data.map((e) => Course.fromJson(e)).toList();
-    } catch (e) {
-      print('❌ خطأ في الحصول على الكورسات: $e');
-      return [];
-    }
-  }
 
   /// الحصول على كورسات مقدم الخدمة
   Future<List<Course>> getProviderCourses(String providerId) async {
@@ -48,7 +19,7 @@ class CourseService {
 
       return data.map((e) => Course.fromJson(e)).toList();
     } catch (e) {
-      print('❌ خطأ في الحصول على كورسات المزود: $e');
+      Logger.error('خطأ في الحصول على كورسات المزود', e);
       return [];
     }
   }
@@ -64,27 +35,8 @@ class CourseService {
       if (data == null) return null;
       return Course.fromJson(data);
     } catch (e) {
-      print('❌ خطأ في الحصول على تفاصيل الكورس: $e');
+      Logger.error('خطأ في الحصول على تفاصيل الكورس', e);
       return null;
-    }
-  }
-
-  /// البحث عن الكورسات
-  Future<List<Course>> searchCourses(String query) async {
-    try {
-      final data = await _supabaseService.search(
-        SupabaseConfig.coursesTable,
-        'title',
-        query,
-      );
-
-      return data
-          .where((e) => e['status'] == 'published')
-          .map((e) => Course.fromJson(e))
-          .toList();
-    } catch (e) {
-      print('❌ خطأ في البحث عن الكورسات: $e');
-      return [];
     }
   }
 
@@ -120,7 +72,7 @@ class CourseService {
 
       return Course.fromJson(data);
     } catch (e) {
-      print('❌ خطأ في إنشاء الكورس: $e');
+      Logger.error('خطأ في إنشاء الكورس', e);
       return null;
     }
   }
@@ -157,10 +109,10 @@ class CourseService {
         updateData,
       );
 
-      print('✅ تم تحديث الكورس بنجاح');
+      Logger.success('تم تحديث الكورس بنجاح');
       return true;
     } catch (e) {
-      print('❌ خطأ في تحديث الكورس: $e');
+      Logger.error('خطأ في تحديث الكورس', e);
       return false;
     }
   }
@@ -173,10 +125,10 @@ class CourseService {
         courseId,
       );
 
-      print('✅ تم حذف الكورس بنجاح');
+      Logger.success('تم حذف الكورس بنجاح');
       return true;
     } catch (e) {
-      print('❌ خطأ في حذف الكورس: $e');
+      Logger.error('خطأ في حذف الكورس', e);
       return false;
     }
   }
@@ -196,33 +148,6 @@ class CourseService {
     return updateCourse(courseId: courseId, status: 'archived');
   }
 
-  /// الحصول على الكورسات المعلقة (للإدمن)
-  Future<List<Course>> getPendingCourses() async {
-    try {
-      final data = await _supabaseService.query(
-        SupabaseConfig.coursesTable,
-        filters: {'status': 'pending_review'},
-        orderBy: 'created_at',
-        ascending: true,
-      );
-
-      return data.map((e) => Course.fromJson(e)).toList();
-    } catch (e) {
-      print('❌ خطأ في الحصول على الكورسات المعلقة: $e');
-      return [];
-    }
-  }
-
-  /// الموافقة على الكورس (للإدمن)
-  Future<bool> approveCourse(String courseId) async {
-    return updateCourse(courseId: courseId, status: 'published');
-  }
-
-  /// رفض الكورس (للإدمن)
-  Future<bool> rejectCourse(String courseId) async {
-    return updateCourse(courseId: courseId, status: 'draft');
-  }
-
   /// الحصول على إحصائيات الكورس
   Future<Map<String, dynamic>> getCourseStats(String courseId) async {
     try {
@@ -237,65 +162,8 @@ class CourseService {
         'status': course.status,
       };
     } catch (e) {
-      print('❌ خطأ في الحصول على إحصائيات الكورس: $e');
+      Logger.error('خطأ في الحصول على إحصائيات الكورس', e);
       return {};
-    }
-  }
-
-  /// الحصول على الكورسات المميزة
-  Future<List<Course>> getFeaturedCourses({int limit = 5}) async {
-    try {
-      final data = await _supabaseService.query(
-        SupabaseConfig.coursesTable,
-        filters: {
-          'status': 'published',
-          'is_featured': true,
-        },
-        orderBy: 'rating',
-        ascending: false,
-        limit: limit,
-      );
-
-      return data.map((e) => Course.fromJson(e)).toList();
-    } catch (e) {
-      print('❌ خطأ في الحصول على الكورسات المميزة: $e');
-      return [];
-    }
-  }
-
-  /// الحصول على الكورسات الأكثر تقييماً
-  Future<List<Course>> getTopRatedCourses({int limit = 5}) async {
-    try {
-      final data = await _supabaseService.query(
-        SupabaseConfig.coursesTable,
-        filters: {'status': 'published'},
-        orderBy: 'rating',
-        ascending: false,
-        limit: limit,
-      );
-
-      return data.map((e) => Course.fromJson(e)).toList();
-    } catch (e) {
-      print('❌ خطأ في الحصول على الكورسات الأكثر تقييماً: $e');
-      return [];
-    }
-  }
-
-  /// الحصول على الكورسات الجديدة
-  Future<List<Course>> getNewCourses({int limit = 5}) async {
-    try {
-      final data = await _supabaseService.query(
-        SupabaseConfig.coursesTable,
-        filters: {'status': 'published'},
-        orderBy: 'created_at',
-        ascending: false,
-        limit: limit,
-      );
-
-      return data.map((e) => Course.fromJson(e)).toList();
-    } catch (e) {
-      print('❌ خطأ في الحصول على الكورسات الجديدة: $e');
-      return [];
     }
   }
 
@@ -309,7 +177,7 @@ class CourseService {
       );
       return true;
     } catch (e) {
-      print('❌ خطأ في تحديث عدد الطلاب: $e');
+      Logger.error('خطأ في تحديث عدد الطلاب', e);
       return false;
     }
   }
@@ -324,7 +192,7 @@ class CourseService {
       );
       return true;
     } catch (e) {
-      print('❌ خطأ في تحديث التقييم: $e');
+      Logger.error('خطأ في تحديث التقييم', e);
       return false;
     }
   }

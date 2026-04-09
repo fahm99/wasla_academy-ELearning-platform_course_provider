@@ -13,20 +13,12 @@ class User extends Equatable {
   final bool isActive;
   final bool isVerified;
 
-  // حقول إضافية للطلاب
-  final int? coursesEnrolled;
-  final int? certificatesCount;
-  final double? totalSpent;
-
-  // حقول إضافية لمقدمي الخدمات
+  // حقول مقدم الخدمة
   final int? coursesCount;
   final int? studentsCount;
   final double? totalEarnings;
   final Map<String, dynamic>? bankAccount;
-
-  // حقول إضافية للإدمن
-  final Map<String, dynamic>? permissions;
-  final DateTime? lastLogin;
+  final String? specialization;
 
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -43,15 +35,11 @@ class User extends Equatable {
     this.rating = 0.0,
     this.isActive = true,
     this.isVerified = false,
-    this.coursesEnrolled,
-    this.certificatesCount,
-    this.totalSpent,
     this.coursesCount,
     this.studentsCount,
     this.totalEarnings,
     this.bankAccount,
-    this.permissions,
-    this.lastLogin,
+    this.specialization,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -69,15 +57,11 @@ class User extends Equatable {
         rating,
         isActive,
         isVerified,
-        coursesEnrolled,
-        certificatesCount,
-        totalSpent,
         coursesCount,
         studentsCount,
         totalEarnings,
         bankAccount,
-        permissions,
-        lastLogin,
+        specialization,
         createdAt,
         updatedAt,
       ];
@@ -94,15 +78,11 @@ class User extends Equatable {
     double? rating,
     bool? isActive,
     bool? isVerified,
-    int? coursesEnrolled,
-    int? certificatesCount,
-    double? totalSpent,
     int? coursesCount,
     int? studentsCount,
     double? totalEarnings,
     Map<String, dynamic>? bankAccount,
-    Map<String, dynamic>? permissions,
-    DateTime? lastLogin,
+    String? specialization,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -118,15 +98,11 @@ class User extends Equatable {
       rating: rating ?? this.rating,
       isActive: isActive ?? this.isActive,
       isVerified: isVerified ?? this.isVerified,
-      coursesEnrolled: coursesEnrolled ?? this.coursesEnrolled,
-      certificatesCount: certificatesCount ?? this.certificatesCount,
-      totalSpent: totalSpent ?? this.totalSpent,
       coursesCount: coursesCount ?? this.coursesCount,
       studentsCount: studentsCount ?? this.studentsCount,
       totalEarnings: totalEarnings ?? this.totalEarnings,
       bankAccount: bankAccount ?? this.bankAccount,
-      permissions: permissions ?? this.permissions,
-      lastLogin: lastLogin ?? this.lastLogin,
+      specialization: specialization ?? this.specialization,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -145,15 +121,11 @@ class User extends Equatable {
       'rating': rating,
       'is_active': isActive,
       'is_verified': isVerified,
-      'courses_enrolled': coursesEnrolled,
-      'certificates_count': certificatesCount,
-      'total_spent': totalSpent,
       'courses_count': coursesCount,
       'students_count': studentsCount,
       'total_earnings': totalEarnings,
       'bank_account': bankAccount,
-      'permissions': permissions,
-      'last_login': lastLogin?.toIso8601String(),
+      'specialization': specialization,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -168,24 +140,18 @@ class User extends Equatable {
       avatarUrl: json['avatar_url'],
       profileImageUrl: json['profile_image_url'],
       userType: UserType.values.firstWhere(
-        (e) => e.name == (json['user_type'] ?? 'student'),
-        orElse: () => UserType.student,
+        (e) => e.name == (json['user_type'] ?? 'provider'),
+        orElse: () => UserType.provider,
       ),
       bio: json['bio'],
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       isActive: json['is_active'] ?? true,
       isVerified: json['is_verified'] ?? false,
-      coursesEnrolled: json['courses_enrolled'],
-      certificatesCount: json['certificates_count'],
-      totalSpent: (json['total_spent'] as num?)?.toDouble(),
       coursesCount: json['courses_count'],
       studentsCount: json['students_count'],
       totalEarnings: (json['total_earnings'] as num?)?.toDouble(),
       bankAccount: json['bank_account'],
-      permissions: json['permissions'],
-      lastLogin: json['last_login'] != null
-          ? DateTime.parse(json['last_login'])
-          : null,
+      specialization: json['specialization'],
       createdAt: DateTime.parse(
           json['created_at'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(
@@ -194,4 +160,4 @@ class User extends Equatable {
   }
 }
 
-enum UserType { admin, provider, student }
+enum UserType { provider }

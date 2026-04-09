@@ -1,5 +1,6 @@
 import 'package:course_provider/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:course_provider/data/models/certificate/signature_data.dart';
 import '../widgets/certificate_template_widget.dart';
 
 class CertificatePreviewScreen extends StatelessWidget {
@@ -132,20 +133,16 @@ class CertificatePreviewScreen extends StatelessWidget {
               // الشهادة
               CertificateTemplateWidget(
                 key: certificateKey,
-                studentName: 'أحمد محمد علي السالمي',
-                specialization: 'هندسة البرمجيات',
-                certificateId: 'CERT-2024-001',
-                issueDate: '2024/12/07',
-                institutionName: 'الجامعة الوطنية',
+                studentName: 'اسم الطالب التجريبي',
+                specialization: 'التخصص',
+                certificateId: 'CERT-${DateTime.now().millisecondsSinceEpoch}',
+                issueDate:
+                    '${DateTime.now().year}/${DateTime.now().month}/${DateTime.now().day}',
+                institutionName: 'اسم المؤسسة',
                 partnerName: 'منصة وصلة',
-                programName: 'هندسة البرمجيات',
+                programName: 'اسم البرنامج',
                 signatures: const [
-                  SignatureData(name: 'يحيى الصبري', title: 'رئيس قسم الهندسة'),
-                  SignatureData(
-                      name: 'عبدالملك المقطري', title: 'عميد كلية الهندسة'),
-                  SignatureData(
-                      name: 'المهندس فهمي العامري', title: 'مؤسس المنصة'),
-                  SignatureData(name: 'المهندس هيكل المخلافي', title: 'المدرب'),
+                  SignatureData(name: 'الاسم', title: 'المنصب'),
                 ],
               ),
 
