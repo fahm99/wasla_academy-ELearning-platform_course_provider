@@ -58,13 +58,13 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   List<Payment> get _filteredPayments {
     if (_selectedFilter == 'الكل') {
       return _payments;
+    } else if (_selectedFilter == 'معلق') {
+      return _payments.where((p) => p.status == PaymentStatus.pending).toList();
     } else if (_selectedFilter == 'مكتمل') {
       return _payments
           .where((p) => p.status == PaymentStatus.completed)
           .toList();
-    } else if (_selectedFilter == 'معلق') {
-      return _payments.where((p) => p.status == PaymentStatus.pending).toList();
-    } else if (_selectedFilter == 'فاشل') {
+    } else if (_selectedFilter == 'مرفوض') {
       return _payments.where((p) => p.status == PaymentStatus.failed).toList();
     }
     return _payments;
@@ -96,6 +96,9 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   }
 
   Widget _buildEarningsCard() {
+    final pendingCount =
+        _payments.where((p) => p.status == PaymentStatus.pending).length;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -153,12 +156,35 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'من ${_payments.where((p) => p.status == PaymentStatus.completed).length} عملية مكتملة',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.white.withOpacity(0.8),
-            ),
+          Row(
+            children: [
+              Text(
+                'من ${_payments.where((p) => p.status == PaymentStatus.completed).length} عملية مكتملة',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.white.withOpacity(0.8),
+                ),
+              ),
+              if (pendingCount > 0) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.yellow,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$pendingCount بانتظار المراجعة',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.darkBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -173,17 +199,17 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
           _buildFilterChip('الكل', _payments.length),
           const SizedBox(width: 8),
           _buildFilterChip(
-            'مكتمل',
-            _payments.where((p) => p.status == PaymentStatus.completed).length,
-          ),
-          const SizedBox(width: 8),
-          _buildFilterChip(
             'معلق',
             _payments.where((p) => p.status == PaymentStatus.pending).length,
           ),
           const SizedBox(width: 8),
           _buildFilterChip(
-            'فاشل',
+            'مكتمل',
+            _payments.where((p) => p.status == PaymentStatus.completed).length,
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            'مرفوض',
             _payments.where((p) => p.status == PaymentStatus.failed).length,
           ),
         ],
@@ -270,27 +296,44 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'دفعة #${payment.id.substring(0, 8)}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.darkBlue,
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.person,
+                              size: 16, color: AppTheme.darkGray),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              payment.studentName ?? 'طالب غير معروف',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.darkBlue,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'كورس: ${payment.courseId}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.darkGray,
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.book,
+                              size: 16, color: AppTheme.darkGray),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              payment.courseName ?? 'كورس غير معروف',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.darkGray,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -315,25 +358,167 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             const SizedBox(height: 12),
             const Divider(),
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            _buildPaymentDetails(payment),
+            if (payment.receiptImageUrl != null) ...[
+              const SizedBox(height: 12),
+              _buildReceiptImage(payment.receiptImageUrl!),
+            ],
+            if (payment.status == PaymentStatus.pending) ...[
+              const SizedBox(height: 12),
+              _buildActionButtons(payment),
+            ],
+            if (payment.status == PaymentStatus.failed &&
+                payment.rejectionReason != null) ...[
+              const SizedBox(height: 12),
+              _buildRejectionReason(payment.rejectionReason!),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentDetails(Payment payment) {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 8,
+      children: [
+        _buildInfoChip(
+          Icons.payment,
+          'الطريقة',
+          _getPaymentMethodLabel(payment.paymentMethod),
+        ),
+        if (payment.transactionReference != null)
+          _buildInfoChip(
+            Icons.receipt,
+            'رقم العملية',
+            payment.transactionReference!,
+          ),
+        _buildInfoChip(
+          Icons.calendar_today,
+          'التاريخ',
+          DateFormat('yyyy-MM-dd HH:mm').format(payment.createdAt),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReceiptImage(String imageUrl) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppTheme.lightGray),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: AppTheme.lightGray,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+            ),
+            child: const Row(
               children: [
-                _buildInfoRow(
-                  Icons.calendar_today,
-                  'التاريخ',
-                  payment.paymentDate != null
-                      ? DateFormat('yyyy-MM-dd').format(payment.paymentDate!)
-                      : 'غير محدد',
-                ),
-                _buildInfoRow(
-                  Icons.payment,
-                  'الطريقة',
-                  _getPaymentMethodLabel(payment.paymentMethod),
+                Icon(Icons.image, size: 16, color: AppTheme.darkGray),
+                SizedBox(width: 8),
+                Text(
+                  'صورة الإيصال',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.darkBlue,
+                  ),
                 ),
               ],
             ),
-          ],
+          ),
+          InkWell(
+            onTap: () => _showReceiptImage(imageUrl),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(8),
+                bottomRight: Radius.circular(8),
+              ),
+              child: Image.network(
+                imageUrl,
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 150,
+                    color: AppTheme.lightGray,
+                    child: const Center(
+                      child: Icon(Icons.error, color: Colors.red),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(Payment payment) {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () => _approvePayment(payment),
+            icon: const Icon(Icons.check_circle),
+            label: const Text('تأكيد الدفع'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.green,
+              foregroundColor: AppTheme.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
         ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () => _rejectPayment(payment),
+            icon: const Icon(Icons.cancel),
+            label: const Text('رفض الدفع'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.red,
+              foregroundColor: AppTheme.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRejectionReason(String reason) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.red),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info, color: AppTheme.red, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'سبب الرفض: $reason',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.darkBlue,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -341,23 +526,28 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   Widget _buildStatusChip(PaymentStatus status) {
     Color color;
     String label;
+    IconData icon;
 
     switch (status) {
       case PaymentStatus.completed:
         color = AppTheme.green;
         label = 'مكتمل';
+        icon = Icons.check_circle;
         break;
       case PaymentStatus.pending:
         color = AppTheme.yellow;
         label = 'معلق';
+        icon = Icons.pending;
         break;
       case PaymentStatus.failed:
         color = AppTheme.red;
-        label = 'فاشل';
+        label = 'مرفوض';
+        icon = Icons.cancel;
         break;
       case PaymentStatus.refunded:
         color = AppTheme.darkGray;
         label = 'مسترد';
+        icon = Icons.replay;
         break;
     }
 
@@ -368,35 +558,29 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          color: color,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  String _getPaymentMethodLabel(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.creditCard:
-        return 'بطاقة ائتمان';
-      case PaymentMethod.applePay:
-        return 'Apple Pay';
-      case PaymentMethod.googlePay:
-        return 'Google Pay';
-      case PaymentMethod.bankTransfer:
-        return 'تحويل بنكي';
-    }
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoChip(IconData icon, String label, String value) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: AppTheme.darkGray),
+        Icon(icon, size: 14, color: AppTheme.darkGray),
         const SizedBox(width: 4),
         Text(
           '$label: ',
@@ -415,5 +599,181 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         ),
       ],
     );
+  }
+
+  String _getPaymentMethodLabel(PaymentMethod method) {
+    switch (method) {
+      case PaymentMethod.wallet:
+        return 'محفظة إلكترونية';
+      case PaymentMethod.bankTransfer:
+        return 'تحويل بنكي';
+    }
+  }
+
+  void _showReceiptImage(String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(
+              title: const Text('صورة الإيصال'),
+              automaticallyImplyLeading: false,
+              actions: [
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            Flexible(
+              child: InteractiveViewer(
+                child: Image.network(imageUrl),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _approvePayment(Payment payment) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد الدفع'),
+        content: Text(
+          'هل أنت متأكد من تأكيد دفع ${payment.studentName} للكورس ${payment.courseName}؟\n\nسيتم تفعيل وصول الطالب للكورس فوراً.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.green),
+            child: const Text('تأكيد'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final repository = context.read<MainRepository>();
+        final success = await repository.approvePayment(payment.id);
+
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم تأكيد الدفع بنجاح'),
+              backgroundColor: AppTheme.green,
+            ),
+          );
+          await _loadPayments();
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('حدث خطأ في تأكيد الدفع'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('خطأ: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _rejectPayment(Payment payment) async {
+    final reasonController = TextEditingController();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('رفض الدفع'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'هل أنت متأكد من رفض دفع ${payment.studentName}؟',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'سبب الرفض *',
+                border: OutlineInputBorder(),
+                hintText: 'مثال: الإيصال غير واضح',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (reasonController.text.isNotEmpty) {
+                Navigator.pop(context, true);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.red),
+            child: const Text('رفض'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && reasonController.text.isNotEmpty) {
+      try {
+        final repository = context.read<MainRepository>();
+        final success = await repository.rejectPayment(
+          payment.id,
+          reasonController.text,
+        );
+
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم رفض الدفع'),
+              backgroundColor: AppTheme.red,
+            ),
+          );
+          await _loadPayments();
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('حدث خطأ في رفض الدفع'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('خطأ: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+
+    reasonController.dispose();
   }
 }

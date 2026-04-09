@@ -5,6 +5,7 @@ import 'package:course_provider/data/models/lesson.dart';
 import 'package:course_provider/data/models/module.dart';
 import 'package:course_provider/data/models/notification.dart';
 import 'package:course_provider/data/models/payment.dart';
+import 'package:course_provider/data/models/payment_settings.dart';
 import 'package:course_provider/data/models/student.dart';
 import 'package:course_provider/data/models/user.dart' as models;
 import 'package:course_provider/data/services/auth_service.dart';
@@ -620,6 +621,32 @@ class MainRepository {
       startDate: startDate,
       endDate: endDate,
     );
+  }
+
+  Future<bool> approvePayment(String paymentId) async {
+    final user = await getUser();
+    if (user == null) return false;
+    return await _paymentService.approvePayment(paymentId, user.id);
+  }
+
+  Future<bool> rejectPayment(String paymentId, String rejectionReason) async {
+    final user = await getUser();
+    if (user == null) return false;
+    return await _paymentService.rejectPayment(
+      paymentId,
+      user.id,
+      rejectionReason,
+    );
+  }
+
+  Future<PaymentSettings?> getPaymentSettings() async {
+    final user = await getUser();
+    if (user == null) return null;
+    return await _paymentService.getPaymentSettings(user.id);
+  }
+
+  Future<bool> savePaymentSettings(PaymentSettings settings) async {
+    return await _paymentService.savePaymentSettings(settings);
   }
 
   // ============================================
