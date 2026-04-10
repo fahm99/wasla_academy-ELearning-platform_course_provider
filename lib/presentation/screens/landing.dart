@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:ui';
 
 void main() {
@@ -17,33 +18,33 @@ class WaslaApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
-        colorScheme: ColorScheme.light(
-          primary: const Color(0xFF0C1445),
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF0C1445),
           onPrimary: Colors.white,
-          primaryContainer: const Color(0xFF0E1647),
-          onPrimaryContainer: const Color(0xFF7980B6),
-          secondary: const Color(0xFF735C00),
+          primaryContainer: Color(0xFF0E1647),
+          onPrimaryContainer: Color(0xFF7980B6),
+          secondary: Color(0xFF735C00),
           onSecondary: Colors.white,
-          secondaryContainer: const Color(0xFFFDD34D),
-          onSecondaryContainer: const Color(0xFF725B00),
-          tertiary: const Color(0xFF360F01),
+          secondaryContainer: Color(0xFFFDD34D),
+          onSecondaryContainer: Color(0xFF725B00),
+          tertiary: Color(0xFF360F01),
           onTertiary: Colors.white,
-          tertiaryContainer: const Color(0xFF360F01),
-          onTertiaryContainer: const Color(0xFFB4745A),
-          surface: const Color(0xFFF7F9FC),
-          onSurface: const Color(0xFF191C1E),
-          surfaceVariant: const Color(0xFFE0E3E6),
-          onSurfaceVariant: const Color(0xFF46464F),
-          error: const Color(0xFFBA1A1A),
+          tertiaryContainer: Color(0xFF360F01),
+          onTertiaryContainer: Color(0xFFB4745A),
+          surface: Color(0xFFF7F9FC),
+          onSurface: Color(0xFF191C1E),
+          surfaceContainerHighest: Color(0xFFE0E3E6),
+          onSurfaceVariant: Color(0xFF46464F),
+          error: Color(0xFFBA1A1A),
           onError: Colors.white,
-          errorContainer: const Color(0xFFFFDAD6),
-          onErrorContainer: const Color(0xFF93000A),
-          outline: const Color(0xFF767680),
-          outlineVariant: const Color(0xFFC7C5D0),
-          inverseSurface: const Color(0xFF2D3133),
-          onInverseSurface: const Color(0xFFEFF1F4),
-          inversePrimary: const Color(0xFFBCC3FD),
-          surfaceTint: const Color(0xFF535B8E),
+          errorContainer: Color(0xFFFFDAD6),
+          onErrorContainer: Color(0xFF93000A),
+          outline: Color(0xFF767680),
+          outlineVariant: Color(0xFFC7C5D0),
+          inverseSurface: Color(0xFF2D3133),
+          onInverseSurface: Color(0xFFEFF1F4),
+          inversePrimary: Color(0xFFBCC3FD),
+          surfaceTint: Color(0xFF535B8E),
         ),
         textTheme: TextTheme(
           displayLarge: GoogleFonts.manrope(fontWeight: FontWeight.w800),
@@ -76,7 +77,7 @@ class WaslaHomePage extends StatelessWidget {
   const WaslaHomePage({super.key});
 
   void _navigateToAuth(BuildContext context) {
-    Navigator.pushReplacementNamed(context, '/auth');
+    context.go('/auth');
   }
 
   @override
@@ -472,7 +473,7 @@ class WaslaHomePage extends StatelessWidget {
   Widget _buildHeroImage(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
+    return SizedBox(
       height: 500,
       child: Stack(
         children: [
@@ -984,19 +985,21 @@ class WaslaHomePage extends StatelessWidget {
             final isDesktop = constraints.maxWidth > 1024;
 
             return isDesktop
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        flex: 7,
-                        child: _buildStudentsContent(context),
-                      ),
-                      const SizedBox(width: 32),
-                      Expanded(
-                        flex: 5,
-                        child: _buildStudentsImage(context),
-                      ),
-                    ],
+                ? IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 7,
+                          child: _buildStudentsContent(context),
+                        ),
+                        const SizedBox(width: 32),
+                        Expanded(
+                          flex: 5,
+                          child: _buildStudentsImage(context),
+                        ),
+                      ],
+                    ),
                   )
                 : Column(
                     children: [
@@ -1321,7 +1324,7 @@ class WaslaHomePage extends StatelessWidget {
               ],
             ),
           );
-        }).toList(),
+        }),
         const SizedBox(height: 16),
         ElevatedButton(
           onPressed: () => _navigateToAuth(context),
@@ -1351,7 +1354,7 @@ class WaslaHomePage extends StatelessWidget {
   Widget _buildProvidersImage(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
+    return SizedBox(
       height: 500,
       child: Stack(
         children: [
@@ -1601,14 +1604,14 @@ class WaslaHomePage extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildPhoneMockup(context, 'assets/mobile/waslasplash.jpg'),
+                _buildPhoneMockup(context, 'mobile/waslasplash.jpg'),
                 const SizedBox(width: 32),
                 Transform.translate(
                   offset: const Offset(0, 48),
-                  child: _buildPhoneMockup(context, 'assets/mobile/home.jpg'),
+                  child: _buildPhoneMockup(context, 'mobile/home.jpg'),
                 ),
                 const SizedBox(width: 32),
-                _buildPhoneMockup(context, 'assets/mobile/course.jpg'),
+                _buildPhoneMockup(context, 'mobile/course.jpg'),
               ],
             ),
           ),
@@ -2163,7 +2166,7 @@ class WaslaHomePage extends StatelessWidget {
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

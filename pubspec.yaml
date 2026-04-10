@@ -55,6 +55,10 @@ dependencies:
   supabase_flutter: ^2.12.2
   file_picker: ^8.3.2
   image_picker: ^1.1.2
+  video_compress: ^3.1.4
+  video_player: ^2.9.5
+  cross_file: ^0.3.4+2
+
 
 dev_dependencies:
   flutter_test:
@@ -83,6 +87,7 @@ flutter:
     - assets/
     - assets/images/prov.png
     - assets/screens/
+    - assets/mobile/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

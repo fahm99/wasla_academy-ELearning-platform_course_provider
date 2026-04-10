@@ -41,6 +41,9 @@ class Course extends Equatable {
     required this.updatedAt,
   });
 
+  // Getter للتوافق مع الكود الجديد
+  String? get imageUrl => coverImageUrl;
+
   @override
   List<Object?> get props => [
         id,

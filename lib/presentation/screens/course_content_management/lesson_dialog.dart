@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:course_provider/core/theme/app_theme.dart';
 import 'package:course_provider/data/models/lesson.dart';
 import 'package:course_provider/data/repositories/main_repository.dart';
+import 'package:course_provider/core/utils/video_helper.dart';
 
 class LessonDialog extends StatefulWidget {
   final String moduleId;
@@ -31,8 +32,12 @@ class _LessonDialogState extends State<LessonDialog> {
 
   LessonType _selectedType = LessonType.video;
   File? _selectedFile;
+  PlatformFile? _pickedFileResult; // للويب
   bool _isUploading = false;
+  double _uploadProgress = 0.0; // نسبة التقدم
   String? _uploadedFileUrl;
+  VideoInfo? _videoInfo; // معلومات الفيديو
+  bool _isCompressing = false; // حالة الضغط
 
   @override
   void initState() {
@@ -62,30 +67,87 @@ class _LessonDialogState extends State<LessonDialog> {
     super.dispose();
   }
 
+  /// الحصول على اسم الملف بشكل آمن (يعمل على جميع المنصات)
+  String _getFileName(File file) {
+    try {
+      return file.path.split('/').last;
+    } catch (e) {
+      try {
+        return file.path.split('\\').last;
+      } catch (e2) {
+        return 'ملف محدد';
+      }
+    }
+  }
+
   Future<void> _pickFile() async {
     try {
+      print('[Wasla] بدء اختيار الملف - النوع: ${_selectedType.name}');
+
       FilePickerResult? result;
 
       if (_selectedType == LessonType.video) {
+        print('[Wasla] فتح منتقي الفيديو...');
         result = await FilePicker.platform.pickFiles(
           type: FileType.video,
           allowMultiple: false,
+          withData: true,
         );
       } else if (_selectedType == LessonType.file) {
+        print('[Wasla] فتح منتقي الملفات...');
         result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
           allowedExtensions: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'],
           allowMultiple: false,
+          withData: true,
         );
       }
 
       if (result != null && result.files.isNotEmpty) {
-        final file = File(result.files.first.path!);
+        final pickedFile = result.files.first;
+        final fileSize = pickedFile.size;
+        final fileSizeMB = (fileSize / (1024 * 1024)).toStringAsFixed(2);
+
+        print('[Wasla] تم اختيار الملف بنجاح:');
+        print('[Wasla]   - الاسم: ${pickedFile.name}');
+        print('[Wasla]   - الحجم: $fileSizeMB MB ($fileSize bytes)');
+        print('[Wasla]   - النوع: ${pickedFile.extension}');
+        print('[Wasla]   - البيانات متوفرة: ${pickedFile.bytes != null}');
+
         setState(() {
-          _selectedFile = file;
+          try {
+            final path = pickedFile.path;
+            if (path != null) {
+              _selectedFile = File(path);
+              print('[Wasla]   - تم حفظ File من path');
+            } else {
+              _selectedFile = null;
+              print('[Wasla]   - path = null، سنستخدم bytes');
+            }
+          } catch (e) {
+            _selectedFile = null;
+            print('[Wasla]   - path غير متاح (Web)، سنستخدم bytes');
+          }
+          _pickedFileResult = pickedFile;
         });
+
+        // استخراج معلومات الفيديو تلقائياً
+        if (_selectedType == LessonType.video) {
+          if (_selectedFile != null) {
+            // للموبايل/ديسكتوب: استخراج كامل المعلومات
+            await _extractVideoInfo();
+          } else {
+            // للويب: استخراج الاسم فقط من اسم الملف
+            await _extractVideoInfoFromFileName(pickedFile.name);
+          }
+        }
+      } else {
+        print('[Wasla] لم يتم اختيار أي ملف');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[Wasla] ❌ خطأ في اختيار الملف: $e');
+      print('[Wasla] Stack trace: $stackTrace');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -97,48 +159,223 @@ class _LessonDialogState extends State<LessonDialog> {
     }
   }
 
-  Future<String?> _uploadFile() async {
-    if (_selectedFile == null) return _uploadedFileUrl;
+  /// استخراج معلومات الفيديو وملء الحقول تلقائياً
+  Future<void> _extractVideoInfo() async {
+    if (_selectedFile == null) return;
 
-    setState(() => _isUploading = true);
+    try {
+      print('[Wasla] استخراج معلومات الفيديو...');
+
+      final info = await VideoHelper.extractVideoInfo(_selectedFile!);
+
+      if (info != null && mounted) {
+        setState(() {
+          _videoInfo = info;
+
+          // ملء الحقول تلقائياً
+          if (_titleController.text.isEmpty) {
+            _titleController.text = info.name;
+          }
+          if (_descriptionController.text.isEmpty) {
+            _descriptionController.text = info.name;
+          }
+          _videoDurationController.text = info.durationInMinutes.toString();
+        });
+
+        print('[Wasla] ✅ تم ملء الحقول تلقائياً');
+        print('[Wasla]   - العنوان: ${info.name}');
+        print('[Wasla]   - المدة: ${info.durationInMinutes} دقيقة');
+      }
+    } catch (e) {
+      print('[Wasla] ❌ خطأ في استخراج معلومات الفيديو: $e');
+      // لا نعرض رسالة خطأ للمستخدم، فقط نتجاهل
+    }
+  }
+
+  /// استخراج معلومات الفيديو من اسم الملف (للويب)
+  Future<void> _extractVideoInfoFromFileName(String fileName) async {
+    try {
+      print('[Wasla] استخراج معلومات من اسم الملف (Web)...');
+
+      // إزالة الامتداد من اسم الملف
+      final videoName = fileName.replaceAll(RegExp(r'\.[^.]+$'), '');
+
+      if (mounted) {
+        setState(() {
+          // ملء الحقول تلقائياً
+          if (_titleController.text.isEmpty) {
+            _titleController.text = videoName;
+          }
+          if (_descriptionController.text.isEmpty) {
+            _descriptionController.text = videoName;
+          }
+        });
+
+        print('[Wasla] ✅ تم ملء الحقول من اسم الملف');
+        print('[Wasla]   - العنوان: $videoName');
+        print('[Wasla]   - الوصف: $videoName');
+        print('[Wasla]   ⚠️ المدة غير متاحة على Web، يرجى إدخالها يدوياً');
+      }
+    } catch (e) {
+      print('[Wasla] ❌ خطأ في استخراج معلومات من اسم الملف: $e');
+    }
+  }
+
+  Future<String?> _uploadFile() async {
+    if (_selectedFile == null && _pickedFileResult == null) {
+      print(
+          '[Wasla] لا يوجد ملف لرفعه، استخدام الرابط الموجود: $_uploadedFileUrl');
+      return _uploadedFileUrl;
+    }
+
+    print('[Wasla] ========================================');
+    print('[Wasla] بدء عملية رفع الملف');
+    print('[Wasla] ========================================');
+
+    setState(() {
+      _isUploading = true;
+      _uploadProgress = 0.0;
+    });
 
     try {
       final repository = context.read<MainRepository>();
-      String? url;
 
-      if (_selectedType == LessonType.video) {
+      // محاكاة التقدم
+      _simulateProgress();
+
+      String? url;
+      File? fileToUpload = _selectedFile;
+
+      if (_selectedType == LessonType.video && _selectedFile != null) {
+        print('[Wasla] 📹 بدء معالجة الفيديو...');
+
+        // ضغط الفيديو إذا كان كبيراً
+        final fileSize = await _selectedFile!.length();
+        if (fileSize > 50 * 1024 * 1024) {
+          print('[Wasla] 🗜️ الفيديو كبير، بدء الضغط...');
+          setState(() {
+            _isCompressing = true;
+            _uploadProgress = 0.1;
+          });
+
+          final compressedFile = await VideoHelper.compressVideo(
+            _selectedFile!,
+            onProgress: (progress) {
+              if (mounted) {
+                setState(() {
+                  _uploadProgress = 0.1 + (progress * 0.3); // 10-40%
+                });
+              }
+            },
+          );
+
+          if (compressedFile != null) {
+            fileToUpload = compressedFile;
+            print('[Wasla] ✅ تم ضغط الفيديو بنجاح');
+          }
+
+          setState(() {
+            _isCompressing = false;
+            _uploadProgress = 0.4;
+          });
+        }
+
+        // رفع الفيديو
+        print('[Wasla] 📤 بدء رفع الفيديو...');
         url = await repository.uploadVideo(
-          videoFile: _selectedFile!,
+          videoFile: fileToUpload!,
+          courseId: widget.courseId,
+          lessonId: widget.lesson?.id ?? 'temp',
+        );
+      } else if (_selectedType == LessonType.video &&
+          _pickedFileResult != null) {
+        // للويب: استخدام bytes
+        print('[Wasla] 📤 رفع الفيديو من الويب...');
+        url = await repository.uploadVideoFromBytes(
+          videoBytes: _pickedFileResult!.bytes!,
+          fileName: _pickedFileResult!.name,
           courseId: widget.courseId,
           lessonId: widget.lesson?.id ?? 'temp',
         );
       } else if (_selectedType == LessonType.file) {
-        url = await repository.uploadFile(
-          file: _selectedFile!,
-          courseId: widget.courseId,
-          lessonId: widget.lesson?.id ?? 'temp',
-          fileType: _selectedFile!.path.split('.').last,
-        );
+        print('[Wasla] 📄 بدء رفع الملف...');
+
+        if (_pickedFileResult != null) {
+          url = await repository.uploadFileFromBytes(
+            fileBytes: _pickedFileResult!.bytes!,
+            fileName: _pickedFileResult!.name,
+            courseId: widget.courseId,
+            lessonId: widget.lesson?.id ?? 'temp',
+            fileType: _pickedFileResult!.extension ?? '',
+          );
+        } else if (_selectedFile != null) {
+          url = await repository.uploadFile(
+            file: _selectedFile!,
+            courseId: widget.courseId,
+            lessonId: widget.lesson?.id ?? 'temp',
+            fileType: _selectedFile!.path.split('.').last,
+          );
+        }
       }
 
       setState(() {
         _isUploading = false;
+        _isCompressing = false;
+        _uploadProgress = 1.0;
         _uploadedFileUrl = url;
       });
 
+      if (url != null) {
+        print('[Wasla] ✅ تم رفع الملف بنجاح!');
+        print('[Wasla] الرابط: $url');
+
+        // تنظيف الملفات المؤقتة
+        await VideoHelper.cleanup();
+      } else {
+        print('[Wasla] ❌ فشل رفع الملف');
+      }
+
       return url;
-    } catch (e) {
-      setState(() => _isUploading = false);
+    } catch (e, stackTrace) {
+      print('[Wasla] ❌ خطأ في رفع الملف: $e');
+      print('[Wasla] Stack trace: $stackTrace');
+
+      setState(() {
+        _isUploading = false;
+        _isCompressing = false;
+        _uploadProgress = 0.0;
+      });
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ في رفع الملف: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
       return null;
     }
+  }
+
+  /// محاكاة تقدم الرفع
+  void _simulateProgress() {
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (_isUploading && mounted && !_isCompressing) {
+        setState(() => _uploadProgress = 0.5);
+      }
+    });
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (_isUploading && mounted && !_isCompressing) {
+        setState(() => _uploadProgress = 0.7);
+      }
+    });
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (_isUploading && mounted && !_isCompressing) {
+        setState(() => _uploadProgress = 0.9);
+      }
+    });
   }
 
   Future<void> _save() async {
@@ -154,7 +391,7 @@ class _LessonDialogState extends State<LessonDialog> {
 
     // رفع الملف إذا كان موجوداً
     String? fileUrl = _uploadedFileUrl;
-    if (_selectedFile != null) {
+    if (_selectedFile != null || _pickedFileResult != null) {
       fileUrl = await _uploadFile();
       if (fileUrl == null) {
         return; // فشل الرفع
@@ -291,6 +528,7 @@ class _LessonDialogState extends State<LessonDialog> {
         setState(() {
           _selectedType = type;
           _selectedFile = null;
+          _pickedFileResult = null;
           _uploadedFileUrl = null;
         });
       },
@@ -351,7 +589,9 @@ class _LessonDialogState extends State<LessonDialog> {
           ),
         ),
         const SizedBox(height: 12),
-        if (_selectedFile != null || _uploadedFileUrl != null)
+        if (_selectedFile != null ||
+            _pickedFileResult != null ||
+            _uploadedFileUrl != null)
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -363,19 +603,23 @@ class _LessonDialogState extends State<LessonDialog> {
               children: [
                 const Icon(Icons.check_circle, color: AppTheme.green),
                 const SizedBox(width: 12),
-                Expanded(
+                Flexible(
                   child: Text(
-                    _selectedFile != null
-                        ? _selectedFile!.path.split('/').last
-                        : 'ملف مرفوع مسبقاً',
+                    _pickedFileResult != null
+                        ? _pickedFileResult!.name
+                        : _selectedFile != null
+                            ? _getFileName(_selectedFile!)
+                            : 'ملف مرفوع مسبقاً',
                     style: const TextStyle(color: AppTheme.darkBlue),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (_selectedFile != null)
+                if (_selectedFile != null || _pickedFileResult != null)
                   IconButton(
                     onPressed: () {
                       setState(() {
                         _selectedFile = null;
+                        _pickedFileResult = null;
                       });
                     },
                     icon: const Icon(Icons.close, color: Colors.red),
@@ -447,7 +691,9 @@ class _LessonDialogState extends State<LessonDialog> {
           ),
         ),
         const SizedBox(height: 12),
-        if (_selectedFile != null || _uploadedFileUrl != null)
+        if (_selectedFile != null ||
+            _pickedFileResult != null ||
+            _uploadedFileUrl != null)
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -459,19 +705,23 @@ class _LessonDialogState extends State<LessonDialog> {
               children: [
                 const Icon(Icons.check_circle, color: AppTheme.green),
                 const SizedBox(width: 12),
-                Expanded(
+                Flexible(
                   child: Text(
-                    _selectedFile != null
-                        ? _selectedFile!.path.split('/').last
-                        : 'ملف مرفوع مسبقاً',
+                    _pickedFileResult != null
+                        ? _pickedFileResult!.name
+                        : _selectedFile != null
+                            ? _getFileName(_selectedFile!)
+                            : 'ملف مرفوع مسبقاً',
                     style: const TextStyle(color: AppTheme.darkBlue),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (_selectedFile != null)
+                if (_selectedFile != null || _pickedFileResult != null)
                   IconButton(
                     onPressed: () {
                       setState(() {
                         _selectedFile = null;
+                        _pickedFileResult = null;
                       });
                     },
                     icon: const Icon(Icons.close, color: Colors.red),
@@ -506,7 +756,7 @@ class _LessonDialogState extends State<LessonDialog> {
         children: [
           Icon(Icons.info, color: AppTheme.yellow),
           SizedBox(width: 12),
-          Expanded(
+          Flexible(
             child: Text(
               'سيتم إنشاء الاختبار بعد حفظ الدرس',
               style: TextStyle(color: AppTheme.darkBlue),
@@ -526,31 +776,127 @@ class _LessonDialogState extends State<LessonDialog> {
           top: BorderSide(color: AppTheme.darkBlue.withOpacity(0.1)),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          TextButton(
-            onPressed: _isUploading ? null : () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+          // مؤشر التقدم
+          if (_isUploading || _isCompressing) _buildUploadProgress(),
+          if (_isUploading || _isCompressing) const SizedBox(height: 16),
+
+          // الأزرار
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isUploading ? null : () => Navigator.pop(context),
+                child: const Text('إلغاء'),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: _isUploading ? null : _save,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.darkBlue,
+                  foregroundColor: AppTheme.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                ),
+                child: _isUploading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(AppTheme.white),
+                        ),
+                      )
+                    : const Text('حفظ'),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          ElevatedButton(
-            onPressed: _isUploading ? null : _save,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.darkBlue,
-              foregroundColor: AppTheme.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            ),
-            child: _isUploading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(AppTheme.white),
+        ],
+      ),
+    );
+  }
+
+  /// مؤشر التقدم المفصل
+  Widget _buildUploadProgress() {
+    final percentage = (_uploadProgress * 100).toInt();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.darkBlue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.darkBlue.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: _uploadProgress,
+                      strokeWidth: 3,
+                      backgroundColor: AppTheme.mediumGray.withOpacity(0.3),
+                      valueColor:
+                          const AlwaysStoppedAnimation(AppTheme.darkBlue),
                     ),
-                  )
-                : const Text('حفظ'),
+                    Text(
+                      '$percentage%',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.darkBlue,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _isCompressing
+                          ? 'جاري ضغط الفيديو...'
+                          : 'جاري رفع الملف...',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.darkBlue,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _isCompressing
+                          ? 'يرجى الانتظار، قد يستغرق هذا بضع دقائق'
+                          : 'يرجى عدم إغلاق النافذة',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.darkGray.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // شريط التقدم
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: _uploadProgress,
+              minHeight: 6,
+              backgroundColor: AppTheme.mediumGray.withOpacity(0.3),
+              valueColor: const AlwaysStoppedAnimation(AppTheme.darkBlue),
+            ),
           ),
         ],
       ),

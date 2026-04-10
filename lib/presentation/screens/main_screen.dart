@@ -188,89 +188,92 @@ class _MainScreenState extends State<MainScreen> {
     return SizedBox(
       height: 48,
       child: Row(
-        children: List.generate(_navItems.length, (i) {
-          final active = _currentIndex == i;
-          final isPayments = i == 3; // زر المدفوعات
+        children: [
+          for (int i = 0; i < _navItems.length; i++)
+            Expanded(
+              child: _buildNavItem(i),
+            ),
+        ],
+      ),
+    );
+  }
 
-          return Expanded(
-            child: InkWell(
-              onTap: () => setState(() => _currentIndex = i),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: active ? AppTheme.yellow : Colors.transparent,
-                      width: 3,
-                    ),
-                  ),
+  Widget _buildNavItem(int i) {
+    final active = _currentIndex == i;
+    final isPayments = i == 3; // زر المدفوعات
+
+    return InkWell(
+      onTap: () => setState(() => _currentIndex = i),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: active ? AppTheme.yellow : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  _navItems[i].icon,
+                  size: 18,
+                  color: active
+                      ? AppTheme.yellow
+                      : AppTheme.white.withOpacity(0.6),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Icon(
-                          _navItems[i].icon,
-                          size: 18,
-                          color: active
-                              ? AppTheme.yellow
-                              : AppTheme.white.withOpacity(0.6),
-                        ),
-                        // Badge للمدفوعات المعلقة - يظهر فقط عند وجود مدفوعات معلقة
-                        if (isPayments)
-                          FutureBuilder<int>(
-                            future: _getPendingPaymentsCount(),
-                            builder: (context, snapshot) {
-                              final count = snapshot.data ?? 0;
-                              if (count == 0) return const SizedBox.shrink();
+                // Badge للمدفوعات المعلقة - يظهر فقط عند وجود مدفوعات معلقة
+                if (isPayments)
+                  FutureBuilder<int>(
+                    future: _getPendingPaymentsCount(),
+                    builder: (context, snapshot) {
+                      final count = snapshot.data ?? 0;
+                      if (count == 0) return const SizedBox.shrink();
 
-                              return Positioned(
-                                right: -6,
-                                top: -4,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: AppTheme.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 16,
-                                    minHeight: 16,
-                                  ),
-                                  child: Text(
-                                    count > 9 ? '9+' : count.toString(),
-                                    style: const TextStyle(
-                                      color: AppTheme.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              );
-                            },
+                      return Positioned(
+                        right: -6,
+                        top: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.red,
+                            shape: BoxShape.circle,
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _navItems[i].label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: active
-                            ? AppTheme.yellow
-                            : AppTheme.white.withOpacity(0.6),
-                        fontWeight:
-                            active ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            count > 9 ? '9+' : count.toString(),
+                            style: const TextStyle(
+                              color: AppTheme.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              _navItems[i].label,
+              style: TextStyle(
+                fontSize: 11,
+                color:
+                    active ? AppTheme.yellow : AppTheme.white.withOpacity(0.6),
+                fontWeight: active ? FontWeight.bold : FontWeight.normal,
               ),
             ),
-          );
-        }),
+          ],
+        ),
       ),
     );
   }

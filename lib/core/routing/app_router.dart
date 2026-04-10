@@ -15,20 +15,20 @@ import '../../presentation/blocs/settings/settings_event.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: '/',
+    initialLocation: '/splash',
     routes: [
-      // صفحة الهبوط (Landing Page) - الشاشة الأولى
-      GoRoute(
-        path: '/',
-        name: 'landing',
-        builder: (context, state) => const WaslaHomePage(),
-      ),
-
       // شاشة البداية
       GoRoute(
         path: '/splash',
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
+      ),
+
+      // صفحة الهبوط (Landing Page) - متاحة للوصول المباشر فقط
+      GoRoute(
+        path: '/landing',
+        name: 'landing',
+        builder: (context, state) => const WaslaHomePage(),
       ),
 
       // شاشات المصادقة

@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/validators.dart';
 import '../../core/utils/snackbar_helper.dart';
 import '../../data/models/course.dart';
+import '../../data/repositories/main_repository.dart';
 import '../blocs/course/course_bloc.dart';
 import '../blocs/course/course_event.dart';
 import '../blocs/auth/auth_bloc.dart';
@@ -28,6 +31,12 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
   String _selectedCategory = 'تقنية';
   CourseLevel _selectedLevel = CourseLevel.beginner;
   bool _isLoading = false;
+
+  // لرفع الصورة
+  File? _selectedImageFile;
+  PlatformFile? _pickedImageFile;
+  String? _uploadedImageUrl;
+  bool _isUploadingImage = false;
 
   final List<String> _categories = [
     'تقنية',
@@ -54,6 +63,7 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
     _durationController.text = course.durationHours?.toString() ?? '';
     _selectedCategory = course.category ?? 'تقنية';
     _selectedLevel = course.level ?? CourseLevel.beginner;
+    _uploadedImageUrl = course.imageUrl; // حفظ رابط الصورة الموجود
   }
 
   @override
@@ -90,20 +100,32 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
 
   Widget _buildHeader(bool isEditing) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          isEditing ? 'تعديل الكورس' : 'إضافة كورس جديد',
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.darkBlue,
+        // زر العودة
+        IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back),
+          color: AppTheme.darkBlue,
+          tooltip: 'العودة',
+        ),
+        const SizedBox(width: 8),
+        // العنوان
+        Expanded(
+          child: Text(
+            isEditing ? 'تعديل الكورس' : 'إضافة كورس جديد',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.darkBlue,
+            ),
           ),
         ),
+        // زر الإغلاق
         IconButton(
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.close),
           color: AppTheme.darkGray,
+          tooltip: 'إغلاق',
         ),
       ],
     );
@@ -116,6 +138,8 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildImageUploadSection(),
+            const SizedBox(height: 24),
             _buildTextField(
               controller: _titleController,
               label: 'عنوان الكورس',
@@ -329,6 +353,234 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
     }
   }
 
+  /// قسم رفع الصورة التعريفية
+  Widget _buildImageUploadSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'الصورة التعريفية للكورس',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.darkBlue,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (_selectedImageFile != null ||
+            _pickedImageFile != null ||
+            _uploadedImageUrl != null)
+          _buildImagePreview()
+        else
+          _buildImageUploadButton(),
+      ],
+    );
+  }
+
+  Widget _buildImagePreview() {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.mediumGray),
+        color: AppTheme.lightGray,
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: _pickedImageFile != null && _pickedImageFile!.bytes != null
+                ? Image.memory(
+                    _pickedImageFile!.bytes!,
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.cover,
+                  )
+                : _selectedImageFile != null
+                    ? Image.file(
+                        _selectedImageFile!,
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
+                      )
+                    : _uploadedImageUrl != null
+                        ? Image.network(
+                            _uploadedImageUrl!,
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Center(
+                                child: Icon(Icons.broken_image,
+                                    size: 50, color: AppTheme.mediumGray),
+                              );
+                            },
+                          )
+                        : const SizedBox(),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: IconButton(
+              onPressed: () {
+                setState(() {
+                  _selectedImageFile = null;
+                  _pickedImageFile = null;
+                  _uploadedImageUrl = null;
+                });
+              },
+              icon: const Icon(Icons.close, color: Colors.white),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black54,
+              ),
+            ),
+          ),
+          if (_isUploadingImage)
+            Container(
+              color: Colors.black54,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageUploadButton() {
+    return InkWell(
+      onTap: _isUploadingImage ? null : _pickImage,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 200,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: AppTheme.mediumGray, width: 2, style: BorderStyle.solid),
+          color: AppTheme.lightGray.withOpacity(0.3),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_photo_alternate_outlined,
+              size: 60,
+              color: AppTheme.darkBlue.withOpacity(0.5),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'اضغط لاختيار صورة',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppTheme.darkBlue.withOpacity(0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'JPG, PNG (الحد الأقصى 5 MB)',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.darkGray.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      print('[Wasla] بدء اختيار صورة الكورس');
+
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final pickedFile = result.files.first;
+        final fileSize = pickedFile.size;
+        final fileSizeMB = (fileSize / (1024 * 1024)).toStringAsFixed(2);
+
+        // التحقق من حجم الملف (5 MB كحد أقصى)
+        if (fileSize > 5 * 1024 * 1024) {
+          _showErrorSnackBar('حجم الصورة كبير جداً. الحد الأقصى 5 MB');
+          return;
+        }
+
+        print('[Wasla] تم اختيار الصورة:');
+        print('[Wasla]   - الاسم: ${pickedFile.name}');
+        print('[Wasla]   - الحجم: $fileSizeMB MB');
+
+        setState(() {
+          try {
+            final path = pickedFile.path;
+            if (path != null) {
+              _selectedImageFile = File(path);
+            } else {
+              _selectedImageFile = null;
+            }
+          } catch (e) {
+            _selectedImageFile = null;
+          }
+          _pickedImageFile = pickedFile;
+        });
+      }
+    } catch (e) {
+      print('[Wasla] ❌ خطأ في اختيار الصورة: $e');
+      _showErrorSnackBar('حدث خطأ أثناء اختيار الصورة');
+    }
+  }
+
+  Future<String?> _uploadCourseImage(String courseId) async {
+    if (_selectedImageFile == null && _pickedImageFile == null) {
+      return _uploadedImageUrl; // إرجاع الرابط الموجود
+    }
+
+    setState(() => _isUploadingImage = true);
+
+    try {
+      final repository = context.read<MainRepository>();
+      String? url;
+
+      if (_pickedImageFile != null && _pickedImageFile!.bytes != null) {
+        // للويب: استخدام bytes
+        print('[Wasla] رفع صورة الكورس من bytes (Web)');
+        url = await repository.uploadImageFromBytes(
+          imageBytes: _pickedImageFile!.bytes!,
+          fileName: _pickedImageFile!.name,
+          courseId: courseId,
+          type: 'cover',
+        );
+      } else if (_selectedImageFile != null) {
+        // للموبايل/ديسكتوب: استخدام File
+        print('[Wasla] رفع صورة الكورس من File');
+        url = await repository.uploadImage(
+          imageFile: _selectedImageFile!,
+          courseId: courseId,
+          type: 'cover',
+        );
+      }
+
+      setState(() => _isUploadingImage = false);
+
+      if (url != null) {
+        print('[Wasla] ✅ تم رفع صورة الكورس بنجاح: $url');
+      }
+
+      return url;
+    } catch (e) {
+      print('[Wasla] ❌ خطأ في رفع صورة الكورس: $e');
+      setState(() => _isUploadingImage = false);
+      return null;
+    }
+  }
+
   Widget _buildActions(bool isEditing) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -383,9 +635,23 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
       final user = authState.user;
       final isEditing = widget.course != null;
 
+      final courseId =
+          widget.course?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+
+      // رفع الصورة إذا تم اختيار صورة جديدة
+      String? imageUrl = _uploadedImageUrl;
+      if (_selectedImageFile != null || _pickedImageFile != null) {
+        imageUrl = await _uploadCourseImage(courseId);
+        if (imageUrl == null &&
+            (_selectedImageFile != null || _pickedImageFile != null)) {
+          _showErrorSnackBar('فشل رفع صورة الكورس');
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
       final course = Course(
-        id: widget.course?.id ??
-            DateTime.now().millisecondsSinceEpoch.toString(),
+        id: courseId,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         category: _selectedCategory,
@@ -394,6 +660,7 @@ class _CourseFormDialogState extends State<CourseFormDialog> {
         durationHours: _durationController.text.trim().isNotEmpty
             ? int.parse(_durationController.text.trim())
             : null,
+        coverImageUrl: imageUrl, // استخدام coverImageUrl
         providerId: user.id,
         status: widget.course?.status ?? CourseStatus.draft,
         studentsCount: widget.course?.studentsCount ?? 0,

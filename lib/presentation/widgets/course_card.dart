@@ -60,32 +60,65 @@ class CourseCard extends StatelessWidget {
   }
 
   Widget _buildCourseImage() {
+    // استخدام imageUrl (الذي يشير إلى coverImageUrl) أو thumbnailUrl
+    final imageUrl = course.imageUrl ?? course.thumbnailUrl;
+
     return Container(
-      height: 200, // Increased height for better visibility in list view
+      height: 200,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(12),
           topRight: Radius.circular(12),
         ),
-        image: course.thumbnailUrl != null
-            ? DecorationImage(
-                image: NetworkImage(course.thumbnailUrl!),
-                fit: BoxFit.cover,
-              )
-            : null,
-        color: course.thumbnailUrl == null ? AppTheme.lightGray : null,
+        color: AppTheme.lightGray,
       ),
       child: Stack(
         children: [
-          if (course.thumbnailUrl == null)
+          // عرض الصورة
+          if (imageUrl != null)
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              child: Image.network(
+                imageUrl,
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Icon(
+                      AppIcons.courses,
+                      size: 60,
+                      color: AppTheme.darkGray,
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                      color: AppTheme.darkBlue,
+                    ),
+                  );
+                },
+              ),
+            )
+          else
             const Center(
               child: Icon(
                 AppIcons.courses,
-                size: 60, // Increased icon size
+                size: 60,
                 color: AppTheme.darkGray,
               ),
             ),
+          // شارة الحالة
           Positioned(
             top: 12,
             right: 12,

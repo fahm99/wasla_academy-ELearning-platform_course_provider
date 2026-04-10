@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:course_provider/data/models/app_settings.dart';
 import 'package:course_provider/data/models/course.dart';
 import 'package:course_provider/data/models/exam.dart';
@@ -694,6 +695,38 @@ class MainRepository {
   // التخزين
   // ============================================
 
+  /// رفع فيديو سريع مع مؤشر تقدم حقيقي ⚡
+  Future<String?> uploadVideoFast({
+    required dynamic videoFile,
+    required String courseId,
+    required String lessonId,
+    Function(double)? onProgress,
+  }) async {
+    return await _storageService.uploadVideoFast(
+      videoFile: videoFile,
+      courseId: courseId,
+      lessonId: lessonId,
+      onProgress: onProgress,
+    );
+  }
+
+  /// رفع فيديو سريع من bytes (للويب) ⚡
+  Future<String?> uploadVideoFromBytesFast({
+    required Uint8List videoBytes,
+    required String fileName,
+    required String courseId,
+    required String lessonId,
+    Function(double)? onProgress,
+  }) async {
+    return await _storageService.uploadVideoFromBytesFast(
+      videoBytes: videoBytes,
+      fileName: fileName,
+      courseId: courseId,
+      lessonId: lessonId,
+      onProgress: onProgress,
+    );
+  }
+
   Future<String?> uploadVideo({
     required dynamic videoFile,
     required String courseId,
@@ -701,6 +734,20 @@ class MainRepository {
   }) async {
     return await _storageService.uploadVideo(
       videoFile: videoFile,
+      courseId: courseId,
+      lessonId: lessonId,
+    );
+  }
+
+  Future<String?> uploadVideoFromBytes({
+    required Uint8List videoBytes,
+    required String fileName,
+    required String courseId,
+    required String lessonId,
+  }) async {
+    return await _storageService.uploadVideoFromBytes(
+      videoBytes: videoBytes,
+      fileName: fileName,
       courseId: courseId,
       lessonId: lessonId,
     );
@@ -718,6 +765,20 @@ class MainRepository {
     );
   }
 
+  Future<String?> uploadImageFromBytes({
+    required Uint8List imageBytes,
+    required String fileName,
+    required String courseId,
+    String? type,
+  }) async {
+    return await _storageService.uploadImageFromBytes(
+      imageBytes: imageBytes,
+      fileName: fileName,
+      courseId: courseId,
+      type: type,
+    );
+  }
+
   Future<String?> uploadFile({
     required dynamic file,
     required String courseId,
@@ -726,6 +787,22 @@ class MainRepository {
   }) async {
     return await _storageService.uploadFile(
       file: file,
+      courseId: courseId,
+      lessonId: lessonId,
+      fileType: fileType,
+    );
+  }
+
+  Future<String?> uploadFileFromBytes({
+    required Uint8List fileBytes,
+    required String fileName,
+    required String courseId,
+    required String lessonId,
+    required String fileType,
+  }) async {
+    return await _storageService.uploadFileFromBytes(
+      fileBytes: fileBytes,
+      fileName: fileName,
       courseId: courseId,
       lessonId: lessonId,
       fileType: fileType,

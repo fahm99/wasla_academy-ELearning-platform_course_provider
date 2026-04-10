@@ -123,9 +123,55 @@ class SupabaseService {
     Uint8List fileBytes,
   ) async {
     try {
-      await _client.storage.from(bucket).uploadBinary(path, fileBytes);
-      return _client.storage.from(bucket).getPublicUrl(path);
-    } catch (e) {
+      print('[Wasla] SupabaseService.uploadFile - بدء العملية');
+      print('[Wasla]   - Bucket: $bucket');
+      print('[Wasla]   - Path: $path');
+      print(
+          '[Wasla]   - حجم البيانات: ${fileBytes.length} bytes (${(fileBytes.length / (1024 * 1024)).toStringAsFixed(2)} MB)');
+
+      print('[Wasla] التحقق من وجود الـ bucket...');
+      try {
+        final buckets = await _client.storage.listBuckets();
+        final bucketExists = buckets.any((b) => b.name == bucket);
+        print('[Wasla]   - الـ bucket موجود: $bucketExists');
+        if (!bucketExists) {
+          print('[Wasla]   ❌ الـ bucket "$bucket" غير موجود!');
+          print(
+              '[Wasla]   - الـ buckets المتاحة: ${buckets.map((b) => b.name).join(", ")}');
+          throw Exception(
+              'Bucket "$bucket" not found. Available buckets: ${buckets.map((b) => b.name).join(", ")}');
+        }
+      } catch (e) {
+        print('[Wasla]   ⚠️ لم نتمكن من التحقق من الـ buckets: $e');
+      }
+
+      print('[Wasla] بدء رفع الملف إلى Supabase Storage...');
+      await _client.storage.from(bucket).uploadBinary(
+            path,
+            fileBytes,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: true,
+            ),
+          );
+      print('[Wasla] ✅ تم رفع الملف بنجاح!');
+
+      print('[Wasla] الحصول على الرابط العام...');
+      final publicUrl = _client.storage.from(bucket).getPublicUrl(path);
+      print('[Wasla] ✅ الرابط العام: $publicUrl');
+
+      return publicUrl;
+    } catch (e, stackTrace) {
+      print('[Wasla] ❌ SupabaseService.uploadFile - خطأ:');
+      print('[Wasla]   - الخطأ: $e');
+      print('[Wasla]   - النوع: ${e.runtimeType}');
+
+      if (e is StorageException) {
+        print('[Wasla]   - Storage Error Message: ${e.message}');
+        print('[Wasla]   - Storage Error Status Code: ${e.statusCode}');
+      }
+
+      print('[Wasla]   - Stack trace: $stackTrace');
       rethrow;
     }
   }

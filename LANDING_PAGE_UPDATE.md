@@ -26,6 +26,15 @@
 
 ### 2. استبدال الصور في _buildPhoneMockup ✅
 
+#### إضافة assets/mobile/ إلى pubspec.yaml
+```yaml
+assets:
+  - assets/
+  - assets/images/prov.png
+  - assets/screens/
+  - assets/mobile/
+```
+
 #### قبل التحديث
 ```dart
 _buildPhoneMockup(context, 'https://lh3.googleusercontent.com/...')
@@ -99,6 +108,34 @@ routes: [
 - تم إنشاء مسار جديد للـ landing page على المسار `/`
 - تم تغيير `initialLocation` ليشير إلى `/`
 
+### 5. إصلاح مشكلة Layout في _buildForStudentsSection ✅
+
+#### المشكلة
+```
+BoxConstraints forces an infinite height.
+The offending constraints were: BoxConstraints(0.0<=w<=Infinity, h=Infinity)
+```
+
+#### الحل
+تم إضافة `IntrinsicHeight` لـ Row في وضع Desktop:
+
+```dart
+return isDesktop
+    ? IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(flex: 7, child: _buildStudentsContent(context)),
+            const SizedBox(width: 32),
+            Expanded(flex: 5, child: _buildStudentsImage(context)),
+          ],
+        ),
+      )
+    : Column(...);
+```
+
+هذا يحل مشكلة الارتفاع اللانهائي عند استخدام `crossAxisAlignment.stretch` في Row.
+
 ---
 
 ## الملفات المعدلة
@@ -111,11 +148,15 @@ routes: [
 - تحديث `_buildStepCard()` لقبول `Map<String, dynamic>`
 - تحديث قائمة `steps` لاستخدام IconData مباشرة
 - حذف دالة `_getIconData()`
+- إصلاح Layout في `_buildForStudentsSection` بإضافة `IntrinsicHeight`
 
 ### 2. lib/core/routing/app_router.dart
 - إضافة import: `import '../../presentation/screens/landing.dart';`
 - تغيير `initialLocation` من `/splash` إلى `/`
 - إضافة مسار جديد للـ landing page
+
+### 3. pubspec.yaml
+- إضافة `assets/mobile/` إلى قائمة assets
 
 ---
 
@@ -124,6 +165,8 @@ routes: [
 ### الأخطاء المصلحة ✅
 - ✅ خطأ `inverseOnSurface` غير معرف
 - ✅ خطأ نوع البيانات في `_buildStepCard`
+- ✅ خطأ Layout في `_buildForStudentsSection` (BoxConstraints forces infinite height)
+- ✅ خطأ مسار الصور (assets/mobile/ غير مدرج في pubspec.yaml)
 - ✅ جميع الأخطاء تم إصلاحها
 
 ### التحذيرات المتبقية ⚠️
