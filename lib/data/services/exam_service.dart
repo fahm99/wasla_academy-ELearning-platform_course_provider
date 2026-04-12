@@ -1,5 +1,7 @@
 import 'package:course_provider/data/services/supabase_service.dart';
-import '../models/exam.dart';
+import '../models/exam.dart' hide ExamQuestion, ExamResult;
+import '../models/exam_question.dart';
+import '../models/exam_result.dart';
 import '../../core/config/supabase_config.dart';
 
 /// خدمة إدارة الامتحانات
@@ -153,7 +155,7 @@ class ExamService {
         {
           'exam_id': examId,
           'question_text': questionText,
-          'question_type': questionType.name,
+          'question_type': questionType.toDbString(),
           'options': options,
           'correct_answer': correctAnswer,
           'points': points,
@@ -162,6 +164,7 @@ class ExamService {
       );
       return ExamQuestion.fromJson(data);
     } catch (e) {
+      print('Error adding question: $e');
       return null;
     }
   }
@@ -179,7 +182,9 @@ class ExamService {
     try {
       final updateData = <String, dynamic>{};
       if (questionText != null) updateData['question_text'] = questionText;
-      if (questionType != null) updateData['question_type'] = questionType.name;
+      if (questionType != null) {
+        updateData['question_type'] = questionType.toDbString();
+      }
       if (options != null) updateData['options'] = options;
       if (correctAnswer != null) updateData['correct_answer'] = correctAnswer;
       if (points != null) updateData['points'] = points;
@@ -192,6 +197,7 @@ class ExamService {
       );
       return true;
     } catch (e) {
+      print('Error updating question: $e');
       return false;
     }
   }

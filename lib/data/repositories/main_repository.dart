@@ -1,7 +1,10 @@
 import 'dart:typed_data';
 import 'package:course_provider/data/models/app_settings.dart';
 import 'package:course_provider/data/models/course.dart';
-import 'package:course_provider/data/models/exam.dart';
+import 'package:course_provider/data/models/exam.dart'
+    hide ExamQuestion, ExamResult;
+import 'package:course_provider/data/models/exam_question.dart';
+import 'package:course_provider/data/models/exam_result.dart';
 import 'package:course_provider/data/models/lesson.dart';
 import 'package:course_provider/data/models/module.dart';
 import 'package:course_provider/data/models/notification.dart';
@@ -20,6 +23,7 @@ import 'package:course_provider/data/services/notification_service.dart';
 import 'package:course_provider/data/services/settings_service.dart';
 import 'package:course_provider/data/services/storage_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/certificate/certificate.dart' as cert_models;
 
 import '../services/payment_service.dart';
 
@@ -440,73 +444,127 @@ class MainRepository {
   }
 
   // ============================================
-  // الشهادات
+  // الشهادات (النظام الجديد)
   // ============================================
 
-  Future<List<Map<String, dynamic>>> getCertificates() async {
-    final user = await getUser();
-    if (user == null) return [];
-    return await _certificateService.getProviderCertificates(user.id);
+  /// جلب الطلاب المؤهلين للحصول على الشهادة
+  Future<List<cert_models.EligibleStudent>> getEligibleStudents(
+      String courseId) async {
+    return await _certificateService.getEligibleStudents(courseId);
   }
 
-  Future<Map<String, dynamic>?> getCertificateById(String certificateId) async {
-    // استخدام verify certificate للحصول على الشهادة برقمها
-    return await _certificateService.verifyCertificate(certificateId);
-  }
-
-  Future<Map<String, dynamic>> addCertificate({
+  /// إصدار شهادة لطالب واحد
+  Future<cert_models.Certificate?> issueCertificate({
     required String courseId,
     required String studentId,
     required String providerId,
-    Map<String, dynamic>? templateDesign,
+    String? logoUrl,
+    String? signatureUrl,
+    String? customColor,
+    String? grade,
   }) async {
     return await _certificateService.issueCertificate(
       courseId: courseId,
       studentId: studentId,
       providerId: providerId,
-      templateDesign: templateDesign,
+      logoUrl: logoUrl,
+      signatureUrl: signatureUrl,
+      customColor: customColor,
+      grade: grade,
     );
   }
 
-  Future<Map<String, dynamic>> issueCertificate({
-    required String courseId,
-    required String studentId,
-    required String providerId,
-    Map<String, dynamic>? templateDesign,
-  }) async {
-    return await _certificateService.issueCertificate(
-      courseId: courseId,
-      studentId: studentId,
-      providerId: providerId,
-      templateDesign: templateDesign,
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> issueCertificates({
+  /// إصدار شهادات لعدة طلاب
+  Future<Map<String, dynamic>> issueCertificates({
     required String courseId,
     required List<String> studentIds,
     required String providerId,
-    Map<String, dynamic>? templateDesign,
+    String? logoUrl,
+    String? signatureUrl,
+    String? customColor,
   }) async {
     return await _certificateService.issueCertificates(
       courseId: courseId,
       studentIds: studentIds,
       providerId: providerId,
-      templateDesign: templateDesign,
+      logoUrl: logoUrl,
+      signatureUrl: signatureUrl,
+      customColor: customColor,
     );
   }
 
-  Future<List<Map<String, dynamic>>> getCourseCertificates(
+  /// جلب شهادات كورس معين (النظام الجديد)
+  Future<List<cert_models.Certificate>> getCourseCertificates(
       String courseId) async {
     return await _certificateService.getCourseCertificates(courseId);
   }
 
-  Future<void> revokeCertificate(String certificateId) async {
+  /// جلب شهادة طالب معين في كورس معين
+  Future<cert_models.Certificate?> getStudentCertificate({
+    required String courseId,
+    required String studentId,
+  }) async {
+    return await _certificateService.getStudentCertificate(
+      courseId: courseId,
+      studentId: studentId,
+    );
+  }
+
+  /// إلغاء شهادة (النظام الجديد)
+  Future<bool> revokeCertificate(String certificateId) async {
     return await _certificateService.revokeCertificate(certificateId);
   }
 
-  Future<void> restoreCertificate(String certificateId) async {
+  /// استعادة شهادة ملغاة (النظام الجديد)
+  Future<bool> restoreCertificate(String certificateId) async {
     return await _certificateService.restoreCertificate(certificateId);
+  }
+
+  /// جلب جميع شهادات مقدم الخدمة
+  Future<List<cert_models.Certificate>> getProviderCertificates(
+      String providerId) async {
+    return await _certificateService.getProviderCertificates(providerId);
+  }
+
+  /// جلب جميع شهادات المستخدم الحالي
+  Future<List<cert_models.Certificate>> getCertificates() async {
+    final user = await getUser();
+    if (user == null) return [];
+    return await _certificateService.getProviderCertificates(user.id);
+  }
+
+  /// التحقق من صحة شهادة برقمها
+  Future<cert_models.Certificate?> verifyCertificate(
+      String certificateNumber) async {
+    return await _certificateService.verifyCertificate(certificateNumber);
+  }
+
+  /// جلب شهادة بواسطة ID
+  Future<cert_models.Certificate?> getCertificateById(
+      String certificateId) async {
+    return await _certificateService.verifyCertificate(certificateId);
+  }
+
+  /// حفظ إعدادات الشهادة للكورس
+  Future<bool> saveCertificateSettings({
+    required String courseId,
+    required cert_models.CertificateSettings settings,
+  }) async {
+    return await _certificateService.saveCertificateSettings(
+      courseId: courseId,
+      settings: settings,
+    );
+  }
+
+  /// جلب إعدادات الشهادة للكورس
+  Future<cert_models.CertificateSettings?> getCertificateSettings(
+      String courseId) async {
+    return await _certificateService.getCertificateSettings(courseId);
+  }
+
+  /// حذف شهادة (النظام الجديد)
+  Future<bool> deleteCertificate(String certificateId) async {
+    return await _certificateService.deleteCertificate(certificateId);
   }
 
   // ============================================

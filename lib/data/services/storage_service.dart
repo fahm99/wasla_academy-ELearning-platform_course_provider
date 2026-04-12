@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:course_provider/data/services/supabase_service.dart';
 import '../../core/config/supabase_config.dart';
-import 'package:cross_file/cross_file.dart';
 
 /// خدمة التخزين والملفات
 class StorageService {

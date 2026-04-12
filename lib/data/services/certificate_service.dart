@@ -1,21 +1,51 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import '../models/certificate/certificate.dart';
 
 class CertificateService {
   final SupabaseClient _supabase;
 
   CertificateService(this._supabase);
 
+  /// جلب الطلاب المؤهلين للحصول على الشهادة
+  Future<List<EligibleStudent>> getEligibleStudents(String courseId) async {
+    try {
+      final result = await _supabase.rpc('get_eligible_students', params: {
+        'p_course_id': courseId,
+      });
+
+      if (result == null) return [];
+
+      return (result as List)
+          .map((e) => EligibleStudent.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      print('Error getting eligible students: $e');
+      return [];
+    }
+  }
+
   /// إصدار شهادة لطالب واحد
-  Future<Map<String, dynamic>> issueCertificate({
+  Future<Certificate?> issueCertificate({
     required String courseId,
     required String studentId,
     required String providerId,
-    Map<String, dynamic>? templateDesign,
+    String? logoUrl,
+    String? signatureUrl,
+    String? customColor,
+    String? grade,
   }) async {
     try {
-      // توليد رقم الشهادة
-      final certificateNumber = _generateCertificateNumber();
+      // التحقق من الأهلية
+      final isEligible =
+          await _supabase.rpc('check_student_eligibility', params: {
+        'p_student_id': studentId,
+        'p_course_id': courseId,
+      });
+
+      if (isEligible != true) {
+        throw Exception('الطالب غير مؤهل للحصول على الشهادة');
+      }
 
       // التحقق من عدم وجود شهادة سابقة
       final existing = await _supabase
@@ -29,25 +59,36 @@ class CertificateService {
         throw Exception('الطالب لديه شهادة مسبقة لهذا الكورس');
       }
 
-      // إنشاء الشهادة
-      final certificate = await _supabase
-          .from('certificates')
-          .insert({
-            'course_id': courseId,
-            'student_id': studentId,
-            'provider_id': providerId,
-            'certificate_number': certificateNumber,
-            'issue_date': DateTime.now().toIso8601String(),
-            'template_design': templateDesign,
-            'status': 'issued',
-          })
-          .select()
+      // جلب تاريخ الإكمال
+      final enrollment = await _supabase
+          .from('enrollments')
+          .select('completed_at')
+          .eq('course_id', courseId)
+          .eq('student_id', studentId)
           .single();
 
-      // تحديث عدد الشهادات للطالب
-      await _supabase.rpc('increment_student_certificates', params: {
+      // توليد رقم الشهادة
+      final certificateNumber = _generateCertificateNumber();
+
+      // إنشاء الشهادة
+      final certificate = await _supabase.from('certificates').insert({
+        'course_id': courseId,
         'student_id': studentId,
-      });
+        'provider_id': providerId,
+        'certificate_number': certificateNumber,
+        'issue_date': DateTime.now().toIso8601String(),
+        'completion_date': enrollment['completed_at'],
+        'provider_logo_url': logoUrl,
+        'provider_signature_url': signatureUrl,
+        'custom_color': customColor ?? '#1E3A8A',
+        'grade': grade,
+        'auto_issue': false,
+        'status': 'issued',
+      }).select('''
+            *,
+            courses(id, title),
+            users!certificates_student_id_fkey(id, name, email)
+          ''').single();
 
       // إرسال إشعار للطالب
       await _supabase.from('notifications').insert({
@@ -58,21 +99,24 @@ class CertificateService {
         'related_id': certificate['id'],
       });
 
-      return certificate;
+      return Certificate.fromJson(certificate);
     } catch (e) {
-      throw Exception('فشل إصدار الشهادة: $e');
+      print('Error issuing certificate: $e');
+      return null;
     }
   }
 
   /// إصدار شهادات لعدة طلاب
-  Future<List<Map<String, dynamic>>> issueCertificates({
+  Future<Map<String, dynamic>> issueCertificates({
     required String courseId,
     required List<String> studentIds,
     required String providerId,
-    Map<String, dynamic>? templateDesign,
+    String? logoUrl,
+    String? signatureUrl,
+    String? customColor,
   }) async {
-    final certificates = <Map<String, dynamic>>[];
-    final errors = <String>[];
+    final certificates = <Certificate>[];
+    final errors = <String, String>{};
 
     for (final studentId in studentIds) {
       try {
@@ -80,24 +124,32 @@ class CertificateService {
           courseId: courseId,
           studentId: studentId,
           providerId: providerId,
-          templateDesign: templateDesign,
+          logoUrl: logoUrl,
+          signatureUrl: signatureUrl,
+          customColor: customColor,
         );
-        certificates.add(certificate);
+
+        if (certificate != null) {
+          certificates.add(certificate);
+        } else {
+          errors[studentId] = 'فشل إصدار الشهادة';
+        }
       } catch (e) {
-        errors.add('خطأ في إصدار شهادة للطالب $studentId: $e');
+        errors[studentId] = e.toString();
       }
     }
 
-    if (errors.isNotEmpty) {
-      print('أخطاء في إصدار الشهادات: ${errors.join(', ')}');
-    }
-
-    return certificates;
+    return {
+      'success': certificates,
+      'errors': errors,
+      'total': studentIds.length,
+      'issued': certificates.length,
+      'failed': errors.length,
+    };
   }
 
   /// جلب شهادات كورس معين
-  Future<List<Map<String, dynamic>>> getCourseCertificates(
-      String courseId) async {
+  Future<List<Certificate>> getCourseCertificates(String courseId) async {
     try {
       final certificates = await _supabase.from('certificates').select('''
             *,
@@ -105,14 +157,17 @@ class CertificateService {
             courses(id, title)
           ''').eq('course_id', courseId).order('issue_date', ascending: false);
 
-      return List<Map<String, dynamic>>.from(certificates);
+      return (certificates as List)
+          .map((e) => Certificate.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
-      throw Exception('فشل جلب الشهادات: $e');
+      print('Error getting course certificates: $e');
+      return [];
     }
   }
 
   /// جلب شهادة طالب معين في كورس معين
-  Future<Map<String, dynamic>?> getStudentCertificate({
+  Future<Certificate?> getStudentCertificate({
     required String courseId,
     required String studentId,
   }) async {
@@ -122,43 +177,48 @@ class CertificateService {
           .select('''
             *,
             courses(id, title, description),
-            users!certificates_provider_id_fkey(id, name)
+            users!certificates_student_id_fkey(id, name, email)
           ''')
           .eq('course_id', courseId)
           .eq('student_id', studentId)
           .maybeSingle();
 
-      return certificate;
+      if (certificate == null) return null;
+      return Certificate.fromJson(certificate);
     } catch (e) {
-      throw Exception('فشل جلب الشهادة: $e');
+      print('Error getting student certificate: $e');
+      return null;
     }
   }
 
   /// إلغاء شهادة
-  Future<void> revokeCertificate(String certificateId) async {
+  Future<bool> revokeCertificate(String certificateId) async {
     try {
       await _supabase
           .from('certificates')
           .update({'status': 'revoked'}).eq('id', certificateId);
+      return true;
     } catch (e) {
-      throw Exception('فشل إلغاء الشهادة: $e');
+      print('Error revoking certificate: $e');
+      return false;
     }
   }
 
   /// استعادة شهادة ملغاة
-  Future<void> restoreCertificate(String certificateId) async {
+  Future<bool> restoreCertificate(String certificateId) async {
     try {
       await _supabase
           .from('certificates')
           .update({'status': 'issued'}).eq('id', certificateId);
+      return true;
     } catch (e) {
-      throw Exception('فشل استعادة الشهادة: $e');
+      print('Error restoring certificate: $e');
+      return false;
     }
   }
 
   /// جلب جميع شهادات مقدم الخدمة
-  Future<List<Map<String, dynamic>>> getProviderCertificates(
-      String providerId) async {
+  Future<List<Certificate>> getProviderCertificates(String providerId) async {
     try {
       final certificates = await _supabase
           .from('certificates')
@@ -170,15 +230,17 @@ class CertificateService {
           .eq('provider_id', providerId)
           .order('issue_date', ascending: false);
 
-      return List<Map<String, dynamic>>.from(certificates);
+      return (certificates as List)
+          .map((e) => Certificate.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
-      throw Exception('فشل جلب الشهادات: $e');
+      print('Error getting provider certificates: $e');
+      return [];
     }
   }
 
   /// التحقق من صحة شهادة برقمها
-  Future<Map<String, dynamic>?> verifyCertificate(
-      String certificateNumber) async {
+  Future<Certificate?> verifyCertificate(String certificateNumber) async {
     try {
       final certificate = await _supabase
           .from('certificates')
@@ -192,9 +254,50 @@ class CertificateService {
           .eq('status', 'issued')
           .maybeSingle();
 
-      return certificate;
+      if (certificate == null) return null;
+      return Certificate.fromJson(certificate);
     } catch (e) {
-      throw Exception('فشل التحقق من الشهادة: $e');
+      print('Error verifying certificate: $e');
+      return null;
+    }
+  }
+
+  /// حفظ إعدادات الشهادة للكورس
+  Future<bool> saveCertificateSettings({
+    required String courseId,
+    required CertificateSettings settings,
+  }) async {
+    try {
+      await _supabase.from('courses').update({
+        'certificate_auto_issue': settings.autoIssue,
+        'certificate_logo_url': settings.logoUrl,
+        'certificate_signature_url': settings.signatureUrl,
+        'certificate_custom_color': settings.customColor,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', courseId);
+
+      return true;
+    } catch (e) {
+      print('Error saving certificate settings: $e');
+      return false;
+    }
+  }
+
+  /// جلب إعدادات الشهادة للكورس
+  Future<CertificateSettings?> getCertificateSettings(String courseId) async {
+    try {
+      final course = await _supabase.from('courses').select('''
+            id,
+            certificate_auto_issue,
+            certificate_logo_url,
+            certificate_signature_url,
+            certificate_custom_color
+          ''').eq('id', courseId).single();
+
+      return CertificateSettings.fromJson(course);
+    } catch (e) {
+      print('Error getting certificate settings: $e');
+      return null;
     }
   }
 
@@ -208,33 +311,14 @@ class CertificateService {
     return 'CERT-${dateFormat.format(now)}-${timeFormat.format(now)}-$random';
   }
 
-  /// حفظ قالب شهادة
-  Future<void> saveCertificateTemplate({
-    required String courseId,
-    required Map<String, dynamic> templateDesign,
-  }) async {
+  /// حذف شهادة
+  Future<bool> deleteCertificate(String certificateId) async {
     try {
-      await _supabase.from('courses').update({
-        'certificate_template': templateDesign,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', courseId);
+      await _supabase.from('certificates').delete().eq('id', certificateId);
+      return true;
     } catch (e) {
-      throw Exception('فشل حفظ قالب الشهادة: $e');
-    }
-  }
-
-  /// جلب قالب شهادة الكورس
-  Future<Map<String, dynamic>?> getCertificateTemplate(String courseId) async {
-    try {
-      final course = await _supabase
-          .from('courses')
-          .select('certificate_template')
-          .eq('id', courseId)
-          .single();
-
-      return course['certificate_template'] as Map<String, dynamic>?;
-    } catch (e) {
-      throw Exception('فشل جلب قالب الشهادة: $e');
+      print('Error deleting certificate: $e');
+      return false;
     }
   }
 }

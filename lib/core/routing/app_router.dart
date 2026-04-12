@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../theme/app_theme.dart';
 import '../../presentation/screens/main_screen.dart';
 import '../../presentation/screens/auth_screen.dart';
-import '../../presentation/screens/landing.dart';
 import '../../presentation/screens/payment_settings_screen.dart';
 import '../../presentation/blocs/auth/auth_bloc.dart';
 import '../../presentation/blocs/auth/auth_event.dart';
@@ -22,13 +21,6 @@ class AppRouter {
         path: '/splash',
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
-      ),
-
-      // صفحة الهبوط (Landing Page) - متاحة للوصول المباشر فقط
-      GoRoute(
-        path: '/landing',
-        name: 'landing',
-        builder: (context, state) => const WaslaHomePage(),
       ),
 
       // شاشات المصادقة

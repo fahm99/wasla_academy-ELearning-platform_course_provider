@@ -1,201 +1,197 @@
-import 'package:course_provider/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:course_provider/data/models/certificate/signature_data.dart';
-import '../widgets/certificate_template_widget.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/utils/app_icons.dart';
+import '../../data/models/certificate/certificate.dart';
+import '../widgets/certificate_template.dart';
 
 class CertificatePreviewScreen extends StatelessWidget {
-  const CertificatePreviewScreen({super.key});
+  final Certificate certificate;
+
+  const CertificatePreviewScreen({
+    super.key,
+    required this.certificate,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // إنشاء GlobalKey للوصول إلى state الخاص بالشهادة
-    final GlobalKey<CertificateTemplateWidgetState> certificateKey =
-        GlobalKey<CertificateTemplateWidgetState>();
     return Scaffold(
-      backgroundColor: AppTheme.lightGray,
+      backgroundColor: AppTheme.darkGray.withOpacity(0.9),
       appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.preview,
-                size: 20,
-                color: AppTheme.white,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'معاينة الشهادة',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.white,
-              ),
-            ),
-          ],
-        ),
         backgroundColor: AppTheme.darkBlue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppTheme.darkBlue,
-                AppTheme.blue,
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.darkBlue.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+        foregroundColor: AppTheme.white,
+        title: const Text('معاينة الشهادة'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppTheme.white),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'العودة',
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.share,
-                  size: 20,
-                  color: AppTheme.white,
-                ),
-              ),
-              onPressed: () {
-                // مشاركة الشهادة
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('مشاركة الشهادة...')),
-                );
-              },
-            ),
+          IconButton(
+            onPressed: () => _downloadCertificate(context),
+            icon: const Icon(AppIcons.download),
+            tooltip: 'تحميل الشهادة',
           ),
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            child: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.more_vert,
-                  size: 20,
-                  color: AppTheme.white,
-                ),
-              ),
-              onPressed: () {
-                _showMoreOptions(context);
-              },
-            ),
+          IconButton(
+            onPressed: () => _shareCertificate(context),
+            icon: const Icon(AppIcons.send),
+            tooltip: 'مشاركة الشهادة',
           ),
         ],
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          child: IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.arrow_back,
-                size: 20,
-                color: AppTheme.white,
-              ),
-            ),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(24),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // الشهادة
-              CertificateTemplateWidget(
-                key: certificateKey,
-                studentName: 'اسم الطالب التجريبي',
-                specialization: 'التخصص',
-                certificateId: 'CERT-${DateTime.now().millisecondsSinceEpoch}',
-                issueDate:
-                    '${DateTime.now().year}/${DateTime.now().month}/${DateTime.now().day}',
-                institutionName: 'اسم المؤسسة',
-                partnerName: 'منصة وصلة',
-                programName: 'اسم البرنامج',
-                signatures: const [
-                  SignatureData(name: 'الاسم', title: 'المنصب'),
+              // معلومات الشهادة
+              Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      color: AppTheme.blue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'شهادة: ${certificate.studentName}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.darkBlue,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'رقم الشهادة: ${certificate.certificateNumber}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.darkGray,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // قالب الشهادة
+              CertificateTemplate(
+                certificate: certificate,
+                showBorder: true,
+              ),
+
+              // أزرار الإجراءات
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => _downloadCertificate(context),
+                    icon: const Icon(AppIcons.download),
+                    label: const Text('تحميل كـ PDF'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.green,
+                      foregroundColor: AppTheme.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => _downloadAsImage(context),
+                    icon: const Icon(Icons.image),
+                    label: const Text('تحميل كصورة'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.blue,
+                      foregroundColor: AppTheme.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => _shareCertificate(context),
+                    icon: const Icon(AppIcons.send),
+                    label: const Text('مشاركة'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.darkBlue,
+                      foregroundColor: AppTheme.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _printCertificate(context),
+                    icon: const Icon(Icons.print),
+                    label: const Text('طباعة'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.white,
+                      side: const BorderSide(color: AppTheme.white),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
                 ],
               ),
 
-              const SizedBox(height: 30),
-
-              // أزرار الإجراءات
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('جاري تجهيز الطباعة...')),
-                      );
-                    },
-                    icon: const Icon(Icons.print),
-                    label: const Text('طباعة الشهادة'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0c1445),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                    ),
+              // معلومات التحقق
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.white.withOpacity(0.3),
                   ),
-                  const SizedBox(width: 15),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      try {
-                        // استخدام GlobalKey للوصول إلى دالة التحميل
-                        await certificateKey.currentState
-                            ?.downloadCertificate();
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('تم تحميل الشهادة بنجاح')),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text('حدث خطأ أثناء تحميل الشهادة: $e')),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.download),
-                    label: const Text('تحميل الشهادة'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF9D71C),
-                      foregroundColor: const Color(0xFF0c1445),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.verified,
+                      color: AppTheme.green,
+                      size: 32,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    const Text(
+                      'شهادة موثقة',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'يمكن التحقق من صحة هذه الشهادة باستخدام رقم الشهادة',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.white.withOpacity(0.8),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -204,66 +200,43 @@ class CertificatePreviewScreen extends StatelessWidget {
     );
   }
 
-  void _showMoreOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.edit, color: AppTheme.blue),
-              title: const Text('تحرير الشهادة'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('فتح محرر الشهادة...')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.copy, color: AppTheme.green),
-              title: const Text('نسخ رابط الشهادة'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم نسخ الرابط')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.email, color: AppTheme.yellow),
-              title: const Text('إرسال بالبريد الإلكتروني'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('فتح البريد الإلكتروني...')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.qr_code, color: AppTheme.darkBlue),
-              title: const Text('إنشاء رمز QR'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('إنشاء رمز QR...')),
-                );
-              },
-            ),
-          ],
-        ),
+  void _downloadCertificate(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('جاري تحميل الشهادة كـ PDF...'),
+        backgroundColor: AppTheme.green,
       ),
     );
+    // TODO: تنفيذ التحميل كـ PDF
+  }
+
+  void _downloadAsImage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('جاري تحميل الشهادة كصورة...'),
+        backgroundColor: AppTheme.blue,
+      ),
+    );
+    // TODO: تنفيذ التحميل كصورة
+  }
+
+  void _shareCertificate(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('جاري مشاركة الشهادة...'),
+        backgroundColor: AppTheme.darkBlue,
+      ),
+    );
+    // TODO: تنفيذ المشاركة
+  }
+
+  void _printCertificate(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('جاري تجهيز الشهادة للطباعة...'),
+        backgroundColor: AppTheme.darkGray,
+      ),
+    );
+    // TODO: تنفيذ الطباعة
   }
 }

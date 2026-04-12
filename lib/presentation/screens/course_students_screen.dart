@@ -93,29 +93,33 @@ class _CourseStudentsScreenState extends State<CourseStudentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.lightGray,
-      appBar: AppBar(
-        backgroundColor: AppTheme.darkBlue,
-        foregroundColor: AppTheme.white,
-        title: Text('طلاب كورس: ${widget.course.title}'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+    return WillPopScope(
+      onWillPop: () async => true,
+      child: Scaffold(
+        backgroundColor: AppTheme.lightGray,
+        appBar: AppBar(
+            backgroundColor: AppTheme.darkBlue,
+            foregroundColor: AppTheme.white,
+            title: Text('طلاب كورس: ${widget.course.title}'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppTheme.white),
+              onPressed: () => Navigator.of(context).pop(),
+              tooltip: 'العودة',
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _loadStudents,
+                tooltip: 'تحديث',
+              ),
+            ]),
+        body: Column(
+          children: [
+            _buildHeader(),
+            _buildSearchAndFilter(),
+            Expanded(child: _buildStudentsList()),
+          ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadStudents,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildHeader(),
-          _buildSearchAndFilter(),
-          Expanded(child: _buildStudentsList()),
-        ],
       ),
     );
   }

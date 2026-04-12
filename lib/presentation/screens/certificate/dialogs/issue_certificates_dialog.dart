@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:course_provider/core/theme/app_theme.dart';
-import 'package:course_provider/core/utils/app_icons.dart';
-import 'package:course_provider/data/models/certificate/certificate_template.dart';
-import 'package:course_provider/data/models/course.dart';
-import 'package:course_provider/presentation/blocs/course/course_bloc.dart';
-import 'package:course_provider/presentation/blocs/course/course_state.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/app_icons.dart';
+import '../../../../data/models/certificate/certificate.dart';
+import '../../../blocs/certificate/certificate_exports.dart';
 
 class IssueCertificatesDialog extends StatefulWidget {
-  final CertificateTemplate template;
-  final Function(String courseId, List<String> selectedStudents) onIssue;
+  final String courseId;
+  final String providerId;
+  final List<EligibleStudent> eligibleStudents;
+  final CertificateSettings? settings;
 
   const IssueCertificatesDialog({
     super.key,
-    required this.template,
-    required this.onIssue,
+    required this.courseId,
+    required this.providerId,
+    required this.eligibleStudents,
+    this.settings,
   });
 
   @override
@@ -23,311 +25,371 @@ class IssueCertificatesDialog extends StatefulWidget {
 }
 
 class _IssueCertificatesDialogState extends State<IssueCertificatesDialog> {
-  String? _selectedCourseId;
-  final List<String> _selectedStudents = [];
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  List<Map<String, dynamic>> _students = [];
-  bool _isLoading = false;
+  final Set<String> _selectedStudents = {};
+  bool _selectAll = false;
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadStudents(String courseId) async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // جلب الطلاب المسجلين في الكورس والذين أكملوا 100%
-      final response = await context
-          .read<CourseBloc>()
-          .repository
-          .supabase
-          .from('enrollments')
-          .select('''
-            student_id,
-            completion_percentage,
-            users!enrollments_student_id_fkey(id, name, avatar_url)
-          ''')
-          .eq('course_id', courseId)
-          .eq('completion_percentage', 100)
-          .eq('status', 'completed');
-
-      setState(() {
-        _students = (response as List).map((item) {
-          final user = item['users'];
-          return {
-            'id': user['id'],
-            'name': user['name'],
-            'avatar': user['avatar_url'],
-            'isCompleted': true,
-            'progress': item['completion_percentage'],
-          };
-        }).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في تحميل الطلاب: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  List<Map<String, dynamic>> get _filteredStudents {
-    return _students.where((student) {
-      final matchesSearch = student['name']
-          .toString()
-          .toLowerCase()
-          .contains(_searchQuery.toLowerCase());
-      return matchesSearch;
-    }).toList();
+  void initState() {
+    super.initState();
+    _selectAll = true;
+    _selectedStudents.addAll(
+      widget.eligibleStudents.map((s) => s.studentId),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-
-    return AlertDialog(
-      title: Text(
-        'إصدار الشهادات',
-        style: TextStyle(fontSize: isMobile ? 16 : 18),
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      content: SizedBox(
-        width: isMobile ? double.maxFinite : 600,
-        height: isMobile ? 400 : 500,
+      child: Container(
+        width: 600,
+        constraints: const BoxConstraints(maxHeight: 700),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildCourseSelector(),
-            SizedBox(
-                height:
-                    isMobile ? AppTheme.paddingSmall : AppTheme.paddingMedium),
-            if (_selectedCourseId != null) ...[
-              _buildSearchField(),
-              SizedBox(
-                  height: isMobile
-                      ? AppTheme.paddingSmall
-                      : AppTheme.paddingMedium),
-              _buildSelectAllCheckbox(),
-              const Divider(),
-              _buildStudentsList(),
-            ],
+            _buildHeader(context),
+            Expanded(child: _buildContent()),
+            _buildFooter(context),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء'),
-        ),
-        ElevatedButton(
-          onPressed: _selectedCourseId != null && _selectedStudents.isNotEmpty
-              ? () {
-                  widget.onIssue(_selectedCourseId!, _selectedStudents);
-                  Navigator.pop(context);
-                }
-              : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.darkBlue,
-            foregroundColor: AppTheme.white,
-          ),
-          child: const Text('إصدار الشهادات الآن'),
-        ),
-      ],
     );
   }
 
-  Widget _buildCourseSelector() {
-    return BlocBuilder<CourseBloc, CourseState>(
-      builder: (context, state) {
-        if (state is CourseLoaded) {
-          final publishedCourses = state.courses
-              .where((c) => c.status == CourseStatus.published)
-              .toList();
-
-          return DropdownButtonFormField<String>(
-            value: _selectedCourseId,
-            decoration: const InputDecoration(
-              labelText: 'اختر الكورس',
-            ),
-            items: publishedCourses.map((course) {
-              return DropdownMenuItem(
-                value: course.id,
-                child: Text(course.title),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedCourseId = value;
-                _selectedStudents.clear();
-                _students.clear();
-              });
-              if (value != null) {
-                _loadStudents(value);
-              }
-            },
-          );
-        }
-        return const CircularProgressIndicator();
-      },
-    );
-  }
-
-  Widget _buildSearchField() {
-    return TextField(
-      controller: _searchController,
-      decoration: const InputDecoration(
-        labelText: 'البحث باسم الطالب',
-        prefixIcon: Icon(AppIcons.search),
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: AppTheme.darkBlue,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+        ),
       ),
-      onChanged: (value) {
-        setState(() {
-          _searchQuery = value;
-        });
-      },
-    );
-  }
-
-  Widget _buildSelectAllCheckbox() {
-    return Row(
-      children: [
-        Checkbox(
-          value: _selectedStudents.length == _filteredStudents.length &&
-              _filteredStudents.isNotEmpty,
-          onChanged: (value) {
-            setState(() {
-              if (value == true) {
-                _selectedStudents.clear();
-                _selectedStudents.addAll(
-                  _filteredStudents.map((s) => s['id'].toString()),
-                );
-              } else {
-                _selectedStudents.clear();
-              }
-            });
-          },
-        ),
-        const Text('تحديد الكل'),
-        const Spacer(),
-        Text(
-          '${_selectedStudents.length} محدد',
-          style: const TextStyle(
-            color: AppTheme.darkGray,
-            fontSize: 12,
+      child: Row(
+        children: [
+          const Icon(AppIcons.certificates, color: AppTheme.white, size: 28),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'إصدار شهادات',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.white,
+              ),
+            ),
           ),
-        ),
-      ],
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.close, color: AppTheme.white),
+            tooltip: 'إغلاق',
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildStudentsList() {
-    if (_isLoading) {
-      return const Expanded(
-        child: Center(
-          child: CircularProgressIndicator(),
+  Widget _buildContent() {
+    if (widget.eligibleStudents.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              AppIcons.students,
+              size: 64,
+              color: AppTheme.darkGray.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'لا يوجد طلاب مؤهلين',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.darkGray,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'لا يوجد طلاب أكملوا الكورس ونجحوا في الامتحان',
+              style: TextStyle(color: AppTheme.darkGray),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
 
-    if (_filteredStudents.isEmpty) {
-      return const Expanded(
-        child: Center(
+    return Column(
+      children: [
+        _buildSelectAllRow(),
+        const Divider(height: 1),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: widget.eligibleStudents.length,
+            itemBuilder: (context, index) {
+              final student = widget.eligibleStudents[index];
+              return _buildStudentCard(student);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectAllRow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      color: AppTheme.lightGray.withOpacity(0.5),
+      child: Row(
+        children: [
+          Checkbox(
+            value: _selectAll,
+            onChanged: (value) {
+              setState(() {
+                _selectAll = value ?? false;
+                if (_selectAll) {
+                  _selectedStudents.addAll(
+                    widget.eligibleStudents.map((s) => s.studentId),
+                  );
+                } else {
+                  _selectedStudents.clear();
+                }
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'تحديد الكل (${widget.eligibleStudents.length} طالب)',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppTheme.darkBlue,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudentCard(EligibleStudent student) {
+    final isSelected = _selectedStudents.contains(student.studentId);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? AppTheme.blue : AppTheme.lightGray,
+          width: isSelected ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: CheckboxListTile(
+        value: isSelected,
+        onChanged: (value) {
+          setState(() {
+            if (value == true) {
+              _selectedStudents.add(student.studentId);
+            } else {
+              _selectedStudents.remove(student.studentId);
+            }
+            _selectAll =
+                _selectedStudents.length == widget.eligibleStudents.length;
+          });
+        },
+        title: Text(
+          student.studentName,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.darkBlue,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              student.studentEmail,
+              style: const TextStyle(fontSize: 12, color: AppTheme.darkGray),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildInfoChip(
+                    'التقدم', '${student.progress}%', AppTheme.green),
+                const SizedBox(width: 8),
+                if (student.examScore != null)
+                  _buildInfoChip(
+                      'الدرجة', '${student.examScore}', AppTheme.blue),
+              ],
+            ),
+          ],
+        ),
+        controlAffinity: ListTileControlAffinity.leading,
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 10,
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return BlocConsumer<CertificateBloc, CertificateState>(
+      listener: (context, state) {
+        if (state is CertificatesIssued) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor:
+                  state.failedCount == 0 ? AppTheme.green : AppTheme.yellow,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else if (state is CertificateError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.red,
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        final isIssuing = state is CertificatesIssuing;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppTheme.lightGray.withOpacity(0.3),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(16),
+            ),
+          ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.people_outline,
-                size: 64,
-                color: AppTheme.mediumGray,
-              ),
-              SizedBox(height: 16),
-              Text(
-                'لا يوجد طلاب مؤهلين للحصول على الشهادة',
-                style: TextStyle(
-                  color: AppTheme.darkGray,
-                  fontSize: 14,
+              if (isIssuing)
+                Column(
+                  children: [
+                    LinearProgressIndicator(
+                      value: state.current / state.total,
+                      backgroundColor: AppTheme.lightGray,
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(AppTheme.blue),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'جاري إصدار الشهادات... ${state.current}/${state.total}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.darkGray,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'يجب أن يكمل الطالب 100% من الكورس',
-                style: TextStyle(
-                  color: AppTheme.mediumGray,
-                  fontSize: 12,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed:
+                          isIssuing ? null : () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('إلغاء'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: isIssuing || _selectedStudents.isEmpty
+                          ? null
+                          : _issueCertificates,
+                      icon: isIssuing
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.white),
+                              ),
+                            )
+                          : const Icon(AppIcons.certificates),
+                      label: Text(
+                        isIssuing
+                            ? 'جاري الإصدار...'
+                            : 'إصدار (${_selectedStudents.length})',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.darkBlue,
+                        foregroundColor: AppTheme.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ),
-      );
-    }
-
-    return Expanded(
-      child: ListView.builder(
-        itemCount: _filteredStudents.length,
-        itemBuilder: (context, index) {
-          final student = _filteredStudents[index];
-          final isSelected = _selectedStudents.contains(student['id']);
-
-          return CheckboxListTile(
-            value: isSelected,
-            onChanged: (value) {
-              setState(() {
-                if (value == true) {
-                  _selectedStudents.add(student['id']);
-                } else {
-                  _selectedStudents.remove(student['id']);
-                }
-              });
-            },
-            secondary: CircleAvatar(
-              backgroundColor: AppTheme.lightGray,
-              backgroundImage: student['avatar'] != null
-                  ? NetworkImage(student['avatar'])
-                  : null,
-              child: student['avatar'] == null
-                  ? Text(
-                      student['name'].toString().substring(0, 1),
-                      style: const TextStyle(
-                        color: AppTheme.darkBlue,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : null,
-            ),
-            title: Text(student['name']),
-            subtitle: Row(
-              children: [
-                const Icon(
-                  Icons.check_circle,
-                  size: 16,
-                  color: AppTheme.green,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'مكتمل (${student['progress']}%)',
-                  style: const TextStyle(
-                    color: AppTheme.green,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+        );
+      },
     );
+  }
+
+  void _issueCertificates() {
+    context.read<CertificateBloc>().add(
+          IssueMultipleCertificates(
+            courseId: widget.courseId,
+            studentIds: _selectedStudents.toList(),
+            providerId: widget.providerId,
+            logoUrl: widget.settings?.logoUrl,
+            signatureUrl: widget.settings?.signatureUrl,
+            customColor: widget.settings?.customColor,
+          ),
+        );
   }
 }

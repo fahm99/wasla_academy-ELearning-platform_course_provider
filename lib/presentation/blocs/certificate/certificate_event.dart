@@ -1,5 +1,5 @@
-import 'package:course_provider/data/models/certificate.dart';
 import 'package:equatable/equatable.dart';
+import '../../../data/models/certificate/certificate.dart';
 
 abstract class CertificateEvent extends Equatable {
   const CertificateEvent();
@@ -8,105 +8,157 @@ abstract class CertificateEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class CertificateLoadRequested extends CertificateEvent {}
-
-class CertificateIssueRequested extends CertificateEvent {
-  final String studentId;
+/// تحميل الطلاب المؤهلين
+class LoadEligibleStudents extends CertificateEvent {
   final String courseId;
-  final String courseTitle;
 
-  const CertificateIssueRequested({
-    required this.studentId,
+  const LoadEligibleStudents(this.courseId);
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
+/// تحميل شهادات الكورس
+class LoadCourseCertificates extends CertificateEvent {
+  final String courseId;
+
+  const LoadCourseCertificates(this.courseId);
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
+/// تحميل إعدادات الشهادة
+class LoadCertificateSettings extends CertificateEvent {
+  final String courseId;
+
+  const LoadCertificateSettings(this.courseId);
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
+/// حفظ إعدادات الشهادة
+class SaveCertificateSettings extends CertificateEvent {
+  final String courseId;
+  final CertificateSettings settings;
+
+  const SaveCertificateSettings({
     required this.courseId,
-    required this.courseTitle,
+    required this.settings,
   });
 
   @override
-  List<Object?> get props => [studentId, courseId, courseTitle];
+  List<Object?> get props => [courseId, settings];
 }
 
-class CertificateRevokeRequested extends CertificateEvent {
+/// إصدار شهادة لطالب واحد
+class IssueSingleCertificate extends CertificateEvent {
+  final String courseId;
+  final String studentId;
+  final String providerId;
+  final String? logoUrl;
+  final String? signatureUrl;
+  final String? customColor;
+  final String? grade;
+
+  const IssueSingleCertificate({
+    required this.courseId,
+    required this.studentId,
+    required this.providerId,
+    this.logoUrl,
+    this.signatureUrl,
+    this.customColor,
+    this.grade,
+  });
+
+  @override
+  List<Object?> get props => [
+        courseId,
+        studentId,
+        providerId,
+        logoUrl,
+        signatureUrl,
+        customColor,
+        grade,
+      ];
+}
+
+/// إصدار شهادات لعدة طلاب
+class IssueMultipleCertificates extends CertificateEvent {
+  final String courseId;
+  final List<String> studentIds;
+  final String providerId;
+  final String? logoUrl;
+  final String? signatureUrl;
+  final String? customColor;
+
+  const IssueMultipleCertificates({
+    required this.courseId,
+    required this.studentIds,
+    required this.providerId,
+    this.logoUrl,
+    this.signatureUrl,
+    this.customColor,
+  });
+
+  @override
+  List<Object?> get props => [
+        courseId,
+        studentIds,
+        providerId,
+        logoUrl,
+        signatureUrl,
+        customColor,
+      ];
+}
+
+/// إلغاء شهادة
+class RevokeCertificate extends CertificateEvent {
   final String certificateId;
 
-  const CertificateRevokeRequested({required this.certificateId});
+  const RevokeCertificate(this.certificateId);
 
   @override
   List<Object?> get props => [certificateId];
 }
 
-class CertificateRestoreRequested extends CertificateEvent {
+/// استعادة شهادة
+class RestoreCertificate extends CertificateEvent {
   final String certificateId;
 
-  const CertificateRestoreRequested({required this.certificateId});
+  const RestoreCertificate(this.certificateId);
 
   @override
   List<Object?> get props => [certificateId];
 }
 
-class CertificateSearchRequested extends CertificateEvent {
+/// حذف شهادة
+class DeleteCertificate extends CertificateEvent {
+  final String certificateId;
+
+  const DeleteCertificate(this.certificateId);
+
+  @override
+  List<Object?> get props => [certificateId];
+}
+
+/// البحث في الشهادات
+class SearchCertificates extends CertificateEvent {
   final String query;
 
-  const CertificateSearchRequested({required this.query});
+  const SearchCertificates(this.query);
 
   @override
   List<Object?> get props => [query];
 }
 
-class CertificateFilterRequested extends CertificateEvent {
+/// تصفية الشهادات
+class FilterCertificates extends CertificateEvent {
   final CertificateStatus? status;
-  final String? courseId;
-  final DateTime? startDate;
-  final DateTime? endDate;
 
-  const CertificateFilterRequested({
-    this.status,
-    this.courseId,
-    this.startDate,
-    this.endDate,
-  });
+  const FilterCertificates({this.status});
 
   @override
-  List<Object?> get props => [status, courseId, startDate, endDate];
-}
-
-class CertificateClearFilters extends CertificateEvent {}
-
-class CertificateSortRequested extends CertificateEvent {
-  final String sortBy; // 'studentName', 'courseTitle', 'issuedAt'
-  final bool ascending;
-
-  const CertificateSortRequested({
-    required this.sortBy,
-    this.ascending = true,
-  });
-
-  @override
-  List<Object?> get props => [sortBy, ascending];
-}
-
-class CertificateDownloadRequested extends CertificateEvent {
-  final String certificateId;
-
-  const CertificateDownloadRequested({required this.certificateId});
-
-  @override
-  List<Object?> get props => [certificateId];
-}
-
-class CertificateShareRequested extends CertificateEvent {
-  final String certificateId;
-
-  const CertificateShareRequested({required this.certificateId});
-
-  @override
-  List<Object?> get props => [certificateId];
-}
-
-class CertificateVerifyRequested extends CertificateEvent {
-  final String certificateId;
-
-  const CertificateVerifyRequested({required this.certificateId});
-
-  @override
-  List<Object?> get props => [certificateId];
+  List<Object?> get props => [status];
 }

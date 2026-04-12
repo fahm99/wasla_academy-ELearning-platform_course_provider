@@ -1,5 +1,5 @@
-import 'package:course_provider/data/models/certificate.dart';
 import 'package:equatable/equatable.dart';
+import '../../../data/models/certificate/certificate.dart';
 
 abstract class CertificateState extends Equatable {
   const CertificateState();
@@ -8,31 +8,34 @@ abstract class CertificateState extends Equatable {
   List<Object?> get props => [];
 }
 
+/// الحالة الأولية
 class CertificateInitial extends CertificateState {}
 
+/// جاري التحميل
 class CertificateLoading extends CertificateState {}
 
-class CertificateLoaded extends CertificateState {
+/// تم تحميل الطلاب المؤهلين
+class EligibleStudentsLoaded extends CertificateState {
+  final List<EligibleStudent> students;
+
+  const EligibleStudentsLoaded(this.students);
+
+  @override
+  List<Object?> get props => [students];
+}
+
+/// تم تحميل شهادات الكورس
+class CourseCertificatesLoaded extends CertificateState {
   final List<Certificate> certificates;
   final List<Certificate> filteredCertificates;
   final String? searchQuery;
   final CertificateStatus? statusFilter;
-  final String? courseFilter;
-  final DateTime? startDateFilter;
-  final DateTime? endDateFilter;
-  final String? sortBy;
-  final bool sortAscending;
 
-  const CertificateLoaded({
+  const CourseCertificatesLoaded({
     required this.certificates,
     required this.filteredCertificates,
     this.searchQuery,
     this.statusFilter,
-    this.courseFilter,
-    this.startDateFilter,
-    this.endDateFilter,
-    this.sortBy,
-    this.sortAscending = true,
   });
 
   @override
@@ -41,97 +44,93 @@ class CertificateLoaded extends CertificateState {
         filteredCertificates,
         searchQuery,
         statusFilter,
-        courseFilter,
-        startDateFilter,
-        endDateFilter,
-        sortBy,
-        sortAscending,
       ];
 
-  CertificateLoaded copyWith({
+  CourseCertificatesLoaded copyWith({
     List<Certificate>? certificates,
     List<Certificate>? filteredCertificates,
     String? searchQuery,
     CertificateStatus? statusFilter,
-    String? courseFilter,
-    DateTime? startDateFilter,
-    DateTime? endDateFilter,
-    String? sortBy,
-    bool? sortAscending,
+    bool clearSearch = false,
+    bool clearFilter = false,
   }) {
-    return CertificateLoaded(
+    return CourseCertificatesLoaded(
       certificates: certificates ?? this.certificates,
       filteredCertificates: filteredCertificates ?? this.filteredCertificates,
-      searchQuery: searchQuery ?? this.searchQuery,
-      statusFilter: statusFilter ?? this.statusFilter,
-      courseFilter: courseFilter ?? this.courseFilter,
-      startDateFilter: startDateFilter ?? this.startDateFilter,
-      endDateFilter: endDateFilter ?? this.endDateFilter,
-      sortBy: sortBy ?? this.sortBy,
-      sortAscending: sortAscending ?? this.sortAscending,
+      searchQuery: clearSearch ? null : (searchQuery ?? this.searchQuery),
+      statusFilter: clearFilter ? null : (statusFilter ?? this.statusFilter),
     );
   }
 }
 
-class CertificateError extends CertificateState {
+/// تم تحميل إعدادات الشهادة
+class CertificateSettingsLoaded extends CertificateState {
+  final CertificateSettings settings;
+
+  const CertificateSettingsLoaded(this.settings);
+
+  @override
+  List<Object?> get props => [settings];
+}
+
+/// جاري إصدار الشهادات
+class CertificatesIssuing extends CertificateState {
+  final int total;
+  final int current;
+
+  const CertificatesIssuing({
+    required this.total,
+    required this.current,
+  });
+
+  @override
+  List<Object?> get props => [total, current];
+}
+
+/// تم إصدار الشهادات بنجاح
+class CertificatesIssued extends CertificateState {
+  final int successCount;
+  final int failedCount;
+  final Map<String, String> errors;
   final String message;
 
-  const CertificateError({required this.message});
+  const CertificatesIssued({
+    required this.successCount,
+    required this.failedCount,
+    required this.errors,
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [successCount, failedCount, errors, message];
+}
+
+/// تم حفظ الإعدادات بنجاح
+class CertificateSettingsSaved extends CertificateState {
+  final String message;
+
+  const CertificateSettingsSaved(this.message);
 
   @override
   List<Object?> get props => [message];
 }
 
+/// تمت العملية بنجاح
 class CertificateOperationSuccess extends CertificateState {
   final String message;
-  final List<Certificate> certificates;
 
-  const CertificateOperationSuccess({
-    required this.message,
-    required this.certificates,
-  });
+  const CertificateOperationSuccess(this.message);
 
   @override
-  List<Object?> get props => [message, certificates];
+  List<Object?> get props => [message];
 }
 
-class CertificateIssuing extends CertificateState {}
+/// حدث خطأ
+class CertificateError extends CertificateState {
+  final String message;
 
-class CertificateRevoking extends CertificateState {}
-
-class CertificateDownloading extends CertificateState {}
-
-class CertificateSharing extends CertificateState {}
-
-class CertificateVerifying extends CertificateState {}
-
-class CertificateVerified extends CertificateState {
-  final Certificate certificate;
-  final bool isValid;
-
-  const CertificateVerified({
-    required this.certificate,
-    required this.isValid,
-  });
+  const CertificateError(this.message);
 
   @override
-  List<Object?> get props => [certificate, isValid];
-}
-
-class CertificateDownloaded extends CertificateState {
-  final String filePath;
-
-  const CertificateDownloaded({required this.filePath});
-
-  @override
-  List<Object?> get props => [filePath];
-}
-
-class CertificateShared extends CertificateState {
-  final String shareUrl;
-
-  const CertificateShared({required this.shareUrl});
-
-  @override
-  List<Object?> get props => [shareUrl];
+  List<Object?> get props => [message];
 }
