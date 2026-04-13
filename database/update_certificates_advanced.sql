@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS certificate_templates (
   course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   is_default BOOLEAN DEFAULT false,
+  is_auto_issue_enabled BOOLEAN DEFAULT false,
+  type TEXT DEFAULT 'classic',
   template_data JSONB NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

@@ -541,11 +541,11 @@ class _CertificateTemplateEditorScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                const Icon(Icons.info, color: AppTheme.blue),
-                const SizedBox(width: 8),
-                const Text(
+                Icon(Icons.info, color: AppTheme.blue),
+                SizedBox(width: 8),
+                Text(
                   'المتغيرات المتاحة',
                   style: TextStyle(
                     fontSize: 16,
