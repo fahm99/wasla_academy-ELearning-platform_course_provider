@@ -74,25 +74,27 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildFormPanel() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTabSwitcher(),
-            const SizedBox(height: 32),
-            _buildFormTitle(),
-            const SizedBox(height: 28),
-            _tabController.index == 0
-                ? LoginForm(
-                    onForgotPassword: () => showForgotPasswordDialog(context))
-                : const RegisterForm(),
-            const SizedBox(height: 32),
-            _buildFooterLinks(),
-          ],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildTabSwitcher(),
+              const SizedBox(height: 32),
+              _buildFormTitle(),
+              const SizedBox(height: 28),
+              _tabController.index == 0
+                  ? LoginForm(
+                      onForgotPassword: () => showForgotPasswordDialog(context))
+                  : const RegisterForm(),
+              const SizedBox(height: 32),
+              _buildFooterLinks(),
+            ],
+          ),
         ),
       ),
     );

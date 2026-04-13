@@ -41,6 +41,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Node.js
 node_modules
+
+# Next.js
 .next
 *.tar.gz
+
+# Vercel
+.vercel

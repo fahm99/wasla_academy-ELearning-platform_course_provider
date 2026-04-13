@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // الألوان الأساسية
-  static const Color darkBlue = Color(0xFF0C1445);
-  static const Color yellow = Color(0xFFF9D71C);
+  // الألوان الأساسية - مطابقة لتصميم HTML
+  static const Color darkBlue = Color(0xFF0C1445); // Primary color from HTML
+  static const Color secondary = Color(0xFF735C00); // Secondary color from HTML
+  static const Color yellow = Color(0xFFFFD54F); // Yellow from HTML
   static const Color white = Color(0xFFFFFFFF);
   static const Color lightGray = Color(0xFFF5F5F5);
   static const Color mediumGray = Color(0xFFE0E0E0);

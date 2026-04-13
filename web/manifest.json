@@ -1,11 +1,11 @@
 {
-    "name": "course_provider",
-    "short_name": "course_provider",
+    "name": "وصلة - منصة مقدمي الخدمات التعليمية",
+    "short_name": "وصلة",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "منصة وصلة لمقدمي الخدمات التعليمية",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -45,27 +45,43 @@ class _EditTemplateDialogState extends State<EditTemplateDialog> {
 
   void _initializeControllers() {
     _templateNameController = TextEditingController(text: widget.template.name);
-    _institutionNameController =
-        TextEditingController(text: widget.template.settings.institutionName);
-    _partnerNameController =
-        TextEditingController(text: widget.template.settings.partnerName);
-    _programNameController =
-        TextEditingController(text: widget.template.settings.programName);
+    _institutionNameController = TextEditingController(
+        text: widget.template.templateData.customFields?['institutionName'] ??
+            '');
+    _partnerNameController = TextEditingController(
+        text: widget.template.templateData.customFields?['partnerName'] ?? '');
+    _programNameController = TextEditingController(
+        text: widget.template.templateData.customFields?['programName'] ?? '');
     _certificateTitleController =
-        TextEditingController(text: widget.template.settings.certificateTitle);
+        TextEditingController(text: widget.template.templateData.headerText);
     _certificateSubtitleController = TextEditingController(
-        text: widget.template.settings.certificateSubtitle);
+        text:
+            widget.template.templateData.customFields?['certificateSubtitle'] ??
+                '');
     _certificateTextController =
-        TextEditingController(text: widget.template.settings.certificateText);
+        TextEditingController(text: widget.template.templateData.bodyText);
     _sealTextController =
-        TextEditingController(text: widget.template.settings.sealText);
+        TextEditingController(text: widget.template.templateData.footerText);
   }
 
   void _loadSettings() {
-    _showWatermark = widget.template.settings.showWatermark;
-    _primaryColor = widget.template.settings.primaryColor;
-    _accentColor = widget.template.settings.accentColor;
-    _signatures = List.from(widget.template.settings.signatures);
+    _showWatermark =
+        widget.template.templateData.customFields?['showWatermark'] ?? true;
+    _primaryColor = _parseColor(widget.template.templateData.primaryColor);
+    _accentColor = _parseColor(widget.template.templateData.secondaryColor);
+    _signatures =
+        (widget.template.templateData.customFields?['signatures'] as List?)
+                ?.map((s) => SignatureData.fromJson(s))
+                .toList() ??
+            [];
+  }
+
+  Color _parseColor(String hex) {
+    return Color(int.parse(hex.replaceFirst('#', '0xFF')));
+  }
+
+  String _colorToHex(Color color) {
+    return '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
   }
 
   @override
@@ -468,37 +484,53 @@ class _EditTemplateDialogState extends State<EditTemplateDialog> {
                     scale: 0.7,
                     child: CertificateTemplateWidget(
                       studentName: 'اسم الطالب التجريبي',
-                      specialization: widget.template.settings.programName,
+                      specialization: _programNameController.text.isNotEmpty
+                          ? _programNameController.text
+                          : widget.template.templateData
+                                  .customFields?['programName'] ??
+                              '',
                       certificateId: 'CERT-2024-001',
                       issueDate: '2024/12/07',
                       institutionName:
                           _institutionNameController.text.isNotEmpty
                               ? _institutionNameController.text
-                              : widget.template.settings.institutionName,
+                              : widget.template.templateData
+                                      .customFields?['institutionName'] ??
+                                  '',
                       partnerName: _partnerNameController.text.isNotEmpty
                           ? _partnerNameController.text
-                          : widget.template.settings.partnerName,
+                          : widget.template.templateData
+                                  .customFields?['partnerName'] ??
+                              '',
                       programName: _programNameController.text.isNotEmpty
                           ? _programNameController.text
-                          : widget.template.settings.programName,
+                          : widget.template.templateData
+                                  .customFields?['programName'] ??
+                              '',
                       certificateTitle:
                           _certificateTitleController.text.isNotEmpty
                               ? _certificateTitleController.text
-                              : widget.template.settings.certificateTitle,
+                              : widget.template.templateData.headerText,
                       certificateSubtitle:
                           _certificateSubtitleController.text.isNotEmpty
                               ? _certificateSubtitleController.text
-                              : widget.template.settings.certificateSubtitle,
+                              : widget.template.templateData
+                                      .customFields?['certificateSubtitle'] ??
+                                  '',
                       certificateText:
                           _certificateTextController.text.isNotEmpty
                               ? _certificateTextController.text
-                              : widget.template.settings.certificateText,
+                              : widget.template.templateData.bodyText,
                       signatures: _signatures.isNotEmpty
                           ? _signatures
-                          : widget.template.settings.signatures,
+                          : (widget.template.templateData
+                                      .customFields?['signatures'] as List?)
+                                  ?.map((s) => SignatureData.fromJson(s))
+                                  .toList() ??
+                              [],
                       sealText: _sealTextController.text.isNotEmpty
                           ? _sealTextController.text
-                          : widget.template.settings.sealText,
+                          : widget.template.templateData.footerText,
                       showWatermark: _showWatermark,
                       primaryColor: _primaryColor,
                       accentColor: _accentColor,
@@ -514,27 +546,28 @@ class _EditTemplateDialogState extends State<EditTemplateDialog> {
   }
 
   void _saveTemplate() {
-    final updatedSettings = widget.template.settings.copyWith(
-      institutionName: _institutionNameController.text,
-      partnerName: _partnerNameController.text,
-      programName: _programNameController.text,
-      certificateTitle: _certificateTitleController.text,
-      certificateSubtitle: _certificateSubtitleController.text,
-      certificateText: _certificateTextController.text,
-      sealText: _sealTextController.text,
-      showWatermark: _showWatermark,
-      primaryColor: _primaryColor,
-      accentColor: _accentColor,
-      signatures: _signatures,
+    final customFields = {
+      'institutionName': _institutionNameController.text,
+      'partnerName': _partnerNameController.text,
+      'programName': _programNameController.text,
+      'certificateSubtitle': _certificateSubtitleController.text,
+      'showWatermark': _showWatermark,
+      'signatures': _signatures.map((s) => s.toJson()).toList(),
+    };
+
+    final updatedTemplateData = widget.template.templateData.copyWith(
+      primaryColor: _colorToHex(_primaryColor),
+      secondaryColor: _colorToHex(_accentColor),
+      headerText: _certificateTitleController.text,
+      bodyText: _certificateTextController.text,
+      footerText: _sealTextController.text,
+      customFields: customFields,
     );
 
-    final updatedTemplate = CertificateTemplate(
-      id: widget.template.id,
+    final updatedTemplate = widget.template.copyWith(
       name: _templateNameController.text,
-      type: widget.template.type,
-      thumbnailPath: widget.template.thumbnailPath,
-      isAutoIssueEnabled: widget.template.isAutoIssueEnabled,
-      settings: updatedSettings,
+      templateData: updatedTemplateData,
+      updatedAt: DateTime.now(),
     );
 
     widget.onSave(updatedTemplate);

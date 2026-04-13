@@ -11,12 +11,14 @@ class LessonDialog extends StatefulWidget {
   final String moduleId;
   final String courseId;
   final Lesson? lesson;
+  final LessonType? initialType;
 
   const LessonDialog({
     super.key,
     required this.moduleId,
     required this.courseId,
     this.lesson,
+    this.initialType,
   });
 
   @override
@@ -54,6 +56,8 @@ class _LessonDialogState extends State<LessonDialog> {
     if (widget.lesson != null) {
       _selectedType = widget.lesson!.lessonType ?? LessonType.video;
       _uploadedFileUrl = widget.lesson!.videoUrl;
+    } else if (widget.initialType != null) {
+      _selectedType = widget.initialType!;
     }
   }
 
@@ -454,6 +458,12 @@ class _LessonDialogState extends State<LessonDialog> {
   }
 
   Widget _buildHeader() {
+    final isQuiz = _selectedType == LessonType.quiz;
+    final title = widget.lesson == null
+        ? (isQuiz ? 'إضافة امتحان جديد' : 'إضافة درس جديد')
+        : (isQuiz ? 'تعديل الامتحان' : 'تعديل الدرس');
+    final icon = isQuiz ? Icons.quiz : Icons.video_library;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
@@ -465,10 +475,10 @@ class _LessonDialogState extends State<LessonDialog> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.video_library, color: AppTheme.yellow),
+          Icon(icon, color: AppTheme.yellow),
           const SizedBox(width: 12),
           Text(
-            widget.lesson == null ? 'إضافة درس جديد' : 'تعديل الدرس',
+            title,
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,

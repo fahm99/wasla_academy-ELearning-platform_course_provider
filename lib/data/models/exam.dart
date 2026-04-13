@@ -158,7 +158,7 @@ class ExamQuestion extends Equatable {
       'id': id,
       'exam_id': examId,
       'question_text': questionText,
-      'question_type': questionType.name,
+      'question_type': questionType.toDbString(),
       'options': options,
       'correct_answer': correctAnswer,
       'points': points,
@@ -172,9 +172,8 @@ class ExamQuestion extends Equatable {
       id: json['id'] ?? '',
       examId: json['exam_id'] ?? '',
       questionText: json['question_text'] ?? '',
-      questionType: QuestionType.values.firstWhere(
-        (e) => e.name == (json['question_type'] ?? 'multiple_choice'),
-        orElse: () => QuestionType.multipleChoice,
+      questionType: QuestionTypeExtension.fromDbString(
+        json['question_type'] ?? 'multiple_choice',
       ),
       options:
           json['options'] != null ? List<String>.from(json['options']) : null,
@@ -188,6 +187,36 @@ class ExamQuestion extends Equatable {
 }
 
 enum QuestionType { multipleChoice, trueFalse, essay, shortAnswer }
+
+extension QuestionTypeExtension on QuestionType {
+  String toDbString() {
+    switch (this) {
+      case QuestionType.multipleChoice:
+        return 'multiple_choice';
+      case QuestionType.trueFalse:
+        return 'true_false';
+      case QuestionType.essay:
+        return 'essay';
+      case QuestionType.shortAnswer:
+        return 'short_answer';
+    }
+  }
+
+  static QuestionType fromDbString(String value) {
+    switch (value) {
+      case 'multiple_choice':
+        return QuestionType.multipleChoice;
+      case 'true_false':
+        return QuestionType.trueFalse;
+      case 'essay':
+        return QuestionType.essay;
+      case 'short_answer':
+        return QuestionType.shortAnswer;
+      default:
+        return QuestionType.multipleChoice;
+    }
+  }
+}
 
 class ExamResult extends Equatable {
   final String id;

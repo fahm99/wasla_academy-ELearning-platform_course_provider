@@ -211,20 +211,28 @@ class PaymentService {
       final existing = await getPaymentSettings(settings.providerId);
 
       if (existing != null) {
-        // تحديث
+        // تحديث - لا نرسل id في التحديث
+        final updateData = settings.toJson();
+        updateData.remove('id');
+        updateData.remove('created_at');
+
         await _supabaseService.client
             .from('provider_payment_settings')
-            .update(settings.toJson())
+            .update(updateData)
             .eq('provider_id', settings.providerId);
       } else {
-        // إنشاء جديد
+        // إنشاء جديد - لا نرسل id لأن قاعدة البيانات ستولده تلقائيًا
+        final insertData = settings.toJson();
+        insertData.remove('id');
+
         await _supabaseService.client
             .from('provider_payment_settings')
-            .insert(settings.toJson());
+            .insert(insertData);
       }
       return true;
     } catch (e) {
-      return false;
+      print('خطأ في حفظ إعدادات الدفع: $e');
+      rethrow;
     }
   }
 }

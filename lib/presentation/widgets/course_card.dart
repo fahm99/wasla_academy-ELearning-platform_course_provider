@@ -7,6 +7,7 @@ class CourseCard extends StatelessWidget {
   final Course course;
   final VoidCallback onEdit;
   final VoidCallback onManageContent;
+  final VoidCallback? onManageExams;
   final VoidCallback onViewStudents;
   final VoidCallback onManageCertificates;
   final VoidCallback onTogglePublish;
@@ -17,6 +18,7 @@ class CourseCard extends StatelessWidget {
     required this.course,
     required this.onEdit,
     required this.onManageContent,
+    this.onManageExams,
     required this.onViewStudents,
     required this.onManageCertificates,
     required this.onTogglePublish,
@@ -66,8 +68,8 @@ class CourseCard extends StatelessWidget {
     return Container(
       height: 200,
       width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: const BorderRadius.only(
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.only(
           topLeft: Radius.circular(12),
           topRight: Radius.circular(12),
         ),
@@ -269,6 +271,17 @@ class CourseCard extends StatelessWidget {
           children: [
             Expanded(
               child: _buildActionButton(
+                icon: AppIcons.quiz,
+                label: 'إدارة الامتحانات',
+                color: AppTheme.darkBlue,
+                textColor: AppTheme.white,
+                iconColor: AppTheme.yellow,
+                onPressed: onManageExams ?? () {},
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildActionButton(
                 icon: AppIcons.students,
                 label: 'عرض الطلاب',
                 color: AppTheme.darkBlue,
@@ -277,7 +290,12 @@ class CourseCard extends StatelessWidget {
                 onPressed: onViewStudents,
               ),
             ),
-            const SizedBox(width: 8),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Third row of buttons
+        Row(
+          children: [
             Expanded(
               child: _buildActionButton(
                 icon: AppIcons.certificates,
@@ -288,14 +306,8 @@ class CourseCard extends StatelessWidget {
                 onPressed: onManageCertificates,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // Third row with publish toggle and delete
-        Row(
-          children: [
+            const SizedBox(width: 8),
             Expanded(
-              flex: 3,
               child: _buildActionButton(
                 icon: course.status == CourseStatus.published
                     ? AppIcons.inactive
@@ -311,17 +323,17 @@ class CourseCard extends StatelessWidget {
                 onPressed: onTogglePublish,
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 1,
-              child: _buildIconButton(
-                icon: AppIcons.delete,
-                color: AppTheme.red,
-                iconColor: AppTheme.white,
-                onPressed: onDelete,
-              ),
-            ),
           ],
+        ),
+        const SizedBox(height: 8),
+        // Fourth row with delete button
+        _buildActionButton(
+          icon: AppIcons.delete,
+          label: 'حذف الكورس',
+          color: AppTheme.red,
+          textColor: AppTheme.white,
+          iconColor: AppTheme.white,
+          onPressed: onDelete,
         ),
       ],
     );
@@ -360,30 +372,6 @@ class CourseCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildIconButton({
-    required IconData icon,
-    required Color color,
-    required Color iconColor,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: 28, // Reduced width
-      height: 28, // Reduced height
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: AppTheme.white,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-          ),
-        ),
-        child: Icon(icon, size: 12, color: iconColor), // Reduced icon size
       ),
     );
   }

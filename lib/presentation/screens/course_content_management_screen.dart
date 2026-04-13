@@ -7,6 +7,7 @@ import 'package:course_provider/data/models/module.dart' as models;
 import 'package:course_provider/data/models/lesson.dart';
 import 'package:course_provider/data/repositories/main_repository.dart';
 import 'course_content_management/lesson_dialog.dart';
+import 'exam_management_screen.dart';
 
 class CourseContentManagementScreen extends StatefulWidget {
   final Course course;
@@ -73,24 +74,40 @@ class _CourseContentManagementScreenState
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
 
-    return Scaffold(
-      backgroundColor: AppTheme.lightGray,
-      appBar: AppBar(
-        backgroundColor: AppTheme.darkBlue,
-        foregroundColor: AppTheme.white,
-        title: Text('إدارة محتوى: ${widget.course.title}'),
-        actions: [
-          IconButton(
-            onPressed: _loadContent,
-            icon: const Icon(Icons.refresh),
+    return WillPopScope(
+      onWillPop: () async {
+        // منع العودة إلى شاشة تسجيل الدخول
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.lightGray,
+        appBar: AppBar(
+          backgroundColor: AppTheme.darkBlue,
+          foregroundColor: AppTheme.white,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppTheme.white),
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: 'العودة',
           ),
-        ],
+          title: Text('إدارة محتوى: ${widget.course.title}'),
+          actions: [
+            IconButton(
+              onPressed: () => _navigateToExamManagement(context),
+              icon: const Icon(Icons.quiz),
+              tooltip: 'إدارة الامتحانات',
+            ),
+            IconButton(
+              onPressed: _loadContent,
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : isMobile
+                ? _buildMobileLayout()
+                : _buildDesktopLayout(),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : isMobile
-              ? _buildMobileLayout()
-              : _buildDesktopLayout(),
     );
   }
 
@@ -303,41 +320,68 @@ class _CourseContentManagementScreenState
   }
 
   Widget _buildLessonsHeader(models.Module module, int lessonsCount) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppTheme.lightGray)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                module.title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.darkBlue,
-                ),
-              ),
-              Text(
-                '$lessonsCount دروس',
-                style: const TextStyle(
-                  color: AppTheme.darkGray,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      module.title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.darkBlue,
+                      ),
+                    ),
+                    Text(
+                      '$lessonsCount دروس',
+                      style: const TextStyle(
+                        color: AppTheme.darkGray,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          ElevatedButton.icon(
-            onPressed: () => _addNewLesson(module.id),
-            icon: const Icon(AppIcons.add),
-            label: const Text('إضافة درس'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.darkBlue,
-              foregroundColor: AppTheme.white,
-            ),
+          const SizedBox(height: 16),
+          // أزرار الإضافة
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => _addNewLesson(module.id),
+                icon: const Icon(Icons.video_library),
+                label: Text(isMobile ? 'درس' : 'إضافة درس'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.darkBlue,
+                  foregroundColor: AppTheme.white,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _addNewQuiz(module.id),
+                icon: const Icon(Icons.quiz),
+                label: Text(isMobile ? 'امتحان' : 'إضافة امتحان'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.red,
+                  foregroundColor: AppTheme.white,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -440,6 +484,8 @@ class _CourseContentManagementScreenState
   }
 
   Widget _buildEmptyLessons() {
+    final module = _modules[_selectedModuleIndex];
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -457,15 +503,47 @@ class _CourseContentManagementScreenState
               color: AppTheme.darkGray,
             ),
           ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => _addNewLesson(_modules[_selectedModuleIndex].id),
-            icon: const Icon(AppIcons.add),
-            label: const Text('إضافة درس جديد'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.darkBlue,
-              foregroundColor: AppTheme.white,
+          const SizedBox(height: 8),
+          const Text(
+            'ابدأ بإضافة درس أو امتحان',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.mediumGray,
             ),
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => _addNewLesson(module.id),
+                icon: const Icon(Icons.video_library),
+                label: const Text('إضافة درس'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.darkBlue,
+                  foregroundColor: AppTheme.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _addNewQuiz(module.id),
+                icon: const Icon(Icons.quiz),
+                label: const Text('إضافة امتحان'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.red,
+                  foregroundColor: AppTheme.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -678,6 +756,52 @@ class _CourseContentManagementScreenState
     }
   }
 
+  Future<void> _addNewQuiz(String moduleId) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => LessonDialog(
+        moduleId: moduleId,
+        courseId: widget.course.id,
+        initialType: LessonType.quiz,
+      ),
+    );
+
+    if (result != null) {
+      try {
+        final repository = context.read<MainRepository>();
+        await repository.createLesson(
+          moduleId: moduleId,
+          courseId: widget.course.id,
+          title: result['title'],
+          description: result['description'],
+          lessonType: result['lessonType'],
+          videoUrl: result['videoUrl'],
+          videoDuration: result['videoDuration'],
+          content: result['content'],
+          orderNumber: (_moduleLessons[moduleId]?.length ?? 0) + 1,
+        );
+        await _loadContent();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم إضافة الامتحان بنجاح'),
+              backgroundColor: AppTheme.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('خطأ في إضافة الامتحان: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _editLesson(Lesson lesson) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -822,6 +946,15 @@ class _CourseContentManagementScreenState
         );
       }
     }
+  }
+
+  void _navigateToExamManagement(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExamManagementScreen(course: widget.course),
+      ),
+    );
   }
 }
 

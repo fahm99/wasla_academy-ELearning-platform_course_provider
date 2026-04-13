@@ -12,6 +12,7 @@ import '../widgets/course_form_dialog.dart';
 import 'course_content_management_screen.dart';
 import 'course_students_screen.dart';
 import 'course_certificates_screen.dart';
+import 'exam_management_screen.dart';
 
 class CourseScreen extends StatefulWidget {
   const CourseScreen({super.key});
@@ -240,6 +241,7 @@ class _CourseScreenState extends State<CourseScreen> {
             course: courses[index],
             onEdit: () => _showEditCourseDialog(courses[index]),
             onManageContent: () => _navigateToContentManagement(courses[index]),
+            onManageExams: () => _navigateToExamManagement(courses[index]),
             onViewStudents: () => _navigateToStudents(courses[index]),
             onManageCertificates: () => _navigateToCertificates(courses[index]),
             onTogglePublish: () => _togglePublishStatus(courses[index]),
@@ -343,6 +345,15 @@ class _CourseScreenState extends State<CourseScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => CourseContentManagementScreen(course: course),
+      ),
+    );
+  }
+
+  void _navigateToExamManagement(Course course) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ExamManagementScreen(course: course),
       ),
     );
   }
