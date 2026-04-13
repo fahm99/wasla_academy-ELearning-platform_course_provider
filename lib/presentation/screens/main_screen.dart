@@ -14,6 +14,7 @@ import '../blocs/settings/settings_bloc.dart';
 import '../blocs/settings/settings_event.dart';
 import '../widgets/index.dart';
 import 'course_screen.dart';
+import 'all_certificates_screen.dart';
 import 'payments_screen.dart';
 import 'settings_screen.dart';
 import 'dashboard_screen.dart';
@@ -32,6 +33,8 @@ class _MainScreenState extends State<MainScreen> {
   final List<_NavItem> _navItems = const [
     _NavItem(icon: Icons.dashboard, label: 'الرئيسية', iconFilled: true),
     _NavItem(icon: Icons.menu_book, label: 'الكورسات', iconFilled: false),
+    _NavItem(
+        icon: Icons.workspace_premium, label: 'الشهادات', iconFilled: false),
     _NavItem(icon: Icons.payments, label: 'المدفوعات', iconFilled: false),
     _NavItem(icon: Icons.settings, label: 'الإعدادات', iconFilled: false),
   ];
@@ -106,10 +109,12 @@ class _MainScreenState extends State<MainScreen> {
                     color: AppTheme.darkBlue,
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 24),
                 // Navigation Links
-                _buildDesktopNavLinks(),
-                const Spacer(),
+                Expanded(
+                  child: _buildDesktopNavLinks(),
+                ),
+                const SizedBox(width: 24),
                 // Right Side: Search, Notifications, Profile, Logout
                 _buildDesktopRightSection(),
               ],
@@ -122,6 +127,7 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildDesktopNavLinks() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         for (int i = 0; i < _navItems.length; i++) ...[
           _buildDesktopNavLink(i),
@@ -472,8 +478,10 @@ class _MainScreenState extends State<MainScreen> {
       case 1:
         return const CourseScreen();
       case 2:
-        return const PaymentsScreen();
+        return const AllCertificatesScreen();
       case 3:
+        return const PaymentsScreen();
+      case 4:
         return const SettingsScreen();
       default:
         return const DashboardScreen();

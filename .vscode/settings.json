@@ -1,3 +1,9 @@
 {
-    "kiroAgent.configureMCP": "Disabled"
+    "kiroAgent.configureMCP": "Disabled",
+    "javascript.validate.enable": true,
+    "js/ts.implicitProjectConfig.checkJs": false,
+    "files.associations": {
+        "web/index.html": "html"
+    },
+    "html.validate.scripts": false
 }

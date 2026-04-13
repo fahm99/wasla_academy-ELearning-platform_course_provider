@@ -14,6 +14,7 @@ import 'package:course_provider/data/models/student.dart';
 import 'package:course_provider/data/models/user.dart' as models;
 import 'package:course_provider/data/services/auth_service.dart';
 import 'package:course_provider/data/services/certificate_service.dart';
+import 'package:course_provider/data/services/certificate_template_service.dart';
 import 'package:course_provider/data/services/course_service.dart';
 import 'package:course_provider/data/services/enrollment_service.dart';
 import 'package:course_provider/data/services/exam_service.dart';
@@ -24,6 +25,7 @@ import 'package:course_provider/data/services/settings_service.dart';
 import 'package:course_provider/data/services/storage_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/certificate/certificate.dart' as cert_models;
+import '../models/certificate/certificate_template.dart';
 
 import '../services/payment_service.dart';
 
@@ -36,6 +38,7 @@ class MainRepository {
   final ExamService _examService = ExamService();
   final EnrollmentService _enrollmentService = EnrollmentService();
   late final CertificateService _certificateService;
+  late final CertificateTemplateService _certificateTemplateService;
   final NotificationService _notificationService = NotificationService();
   final PaymentService _paymentService = PaymentService();
   final SettingsService _settingsService = SettingsService();
@@ -43,6 +46,8 @@ class MainRepository {
 
   MainRepository() {
     _certificateService = CertificateService(_authService.supabase);
+    _certificateTemplateService =
+        CertificateTemplateService(_authService.supabase);
   }
 
   /// الوصول إلى Supabase client
@@ -910,5 +915,47 @@ class MainRepository {
 
   Future<void> deleteProfileImage({required String userId}) async {
     await _storageService.deleteProfileImage(userId: userId);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Certificate Templates
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  Future<List<CertificateTemplate>> getProviderTemplates(String providerId) async {
+    return await _certificateTemplateService.getProviderTemplates(providerId);
+  }
+
+  Future<CertificateTemplate?> getTemplate(String templateId) async {
+    return await _certificateTemplateService.getTemplate(templateId);
+  }
+
+  Future<CertificateTemplate?> getDefaultTemplate(String providerId, {String? courseId}) async {
+    return await _certificateTemplateService.getDefaultTemplate(providerId, courseId: courseId);
+  }
+
+  Future<bool> createCertificateTemplate(CertificateTemplate template) async {
+    try {
+      await _certificateTemplateService.createTemplate(template);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> updateCertificateTemplate(CertificateTemplate template) async {
+    try {
+      await _certificateTemplateService.updateTemplate(template);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteCertificateTemplate(String templateId) async {
+    return await _certificateTemplateService.deleteTemplate(templateId);
+  }
+
+  Future<bool> setDefaultTemplate(String templateId, String providerId) async {
+    return await _certificateTemplateService.setDefaultTemplate(templateId, providerId);
   }
 }
