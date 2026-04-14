@@ -8,7 +8,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary - Deep Midnight (Authority)
+        // Primary - Dark Blue (Authority)
         primary: {
           DEFAULT: '#0C1445',
           50: '#eef0f6',
@@ -22,7 +22,7 @@ module.exports = {
           800: '#1f2949',
           900: '#0C1445',
         },
-        // Secondary - Illumination Gold (High-value moments)
+        // Secondary - Gold/Yellow
         secondary: {
           DEFAULT: '#FFD54F',
           50: '#fff9e6',
@@ -36,8 +36,23 @@ module.exports = {
           800: '#997120',
           900: '#7f5817',
         },
-        // Surface Colors (No lines needed)
+        // Background
+        background: '#F5F7FA',
+        // Surface
         surface: {
+          DEFAULT: '#FFFFFF',
+          alt: '#F5F7FA',
+        },
+        // Text
+        textPrimary: '#1A1A1A',
+        textSecondary: '#777777',
+        // Status Colors
+        success: '#4CAF50',
+        error: '#F44336',
+        warning: '#FF9800',
+        info: '#2196F3',
+        // Surface Colors (No lines needed)
+        surfaceOld: {
           DEFAULT: '#f7f9fc',
           low: '#f2f4f7',
           lowest: '#ffffff',

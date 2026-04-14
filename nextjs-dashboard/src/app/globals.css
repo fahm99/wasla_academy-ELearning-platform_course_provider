@@ -8,8 +8,8 @@
   --primary: #0C1445;
   --secondary: #FFD54F;
   --surface: #f7f9fc;
-  --surface-low: #f2f4f7;
-  --surface-lowest: #ffffff;
+  --bg-gray-100: #f2f4f7;
+  --bg-gray-50: #ffffff;
   --on-surface: #191c1e;
   --on-surface-variant: #46464f;
 }
@@ -73,7 +73,7 @@
   
   /* Secondary - Ghost Style */
   .btn-secondary {
-    @apply btn text-primary bg-transparent hover:bg-surface-low focus:ring-primary;
+    @apply btn text-primary bg-transparent hover:bg-gray-100 focus:ring-primary;
   }
   
   /* Danger */
@@ -102,7 +102,7 @@
   
   /* ==================== INPUTS ==================== */
   .input {
-    @apply w-full rounded-xl border-0 px-4 py-3 text-sm bg-surface-lowest text-on-surface placeholder:text-on-surface-subtle transition-all duration-200;
+    @apply w-full rounded-xl border-0 px-4 py-3 text-sm bg-gray-50 text-on-surface placeholder:text-on-surface-subtle transition-all duration-200;
     box-shadow: inset 0 0 0 1px rgba(12, 20, 69, 0.08);
   }
   
@@ -118,7 +118,7 @@
   /* ==================== CARDS ==================== */
   /* No borders - use tonal depth instead */
   .card {
-    @apply bg-surface-lowest rounded-2xl;
+    @apply bg-gray-50 rounded-2xl;
     box-shadow: 0 4px 16px rgba(12, 20, 69, 0.04);
   }
   
@@ -153,12 +153,12 @@
   }
   
   .badge-default {
-    @apply badge bg-surface-dim text-on-surface-variant;
+    @apply badge bg-gray-200 text-on-surface-variant;
   }
   
   /* ==================== TABLES (No Lines) ==================== */
   .table-container {
-    @apply rounded-2xl overflow-hidden bg-surface-lowest;
+    @apply rounded-2xl overflow-hidden bg-gray-50;
     box-shadow: 0 4px 16px rgba(12, 20, 69, 0.04);
   }
   
@@ -167,7 +167,7 @@
   }
   
   .table th {
-    @apply bg-surface-low px-6 py-4 text-right font-semibold text-on-surface-variant;
+    @apply bg-gray-100 px-6 py-4 text-right font-semibold text-on-surface-variant;
   }
   
   .table td {
@@ -176,7 +176,7 @@
   
   /* Table rows as cards - no borders, use spacing */
   .table tbody tr {
-    @apply border-b border-surface-low;
+    @apply border-b border-gray-100;
   }
   
   .table tbody tr:last-child {
@@ -184,7 +184,7 @@
   }
   
   .table tbody tr:hover {
-    @apply bg-surface-low/50;
+    @apply bg-gray-100/50;
   }
   
   /* ==================== NAVIGATION ==================== */
@@ -211,7 +211,7 @@
   
   /* ==================== LOADING ==================== */
   .loading-spinner {
-    @apply animate-spin rounded-full border-2 border-surface-low border-t-primary;
+    @apply animate-spin rounded-full border-2 border-gray-100 border-t-primary;
   }
 }
 
@@ -228,7 +228,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-surface-low rounded-full;
+  @apply bg-gray-100 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -281,7 +281,7 @@
 
 /* Skeleton loading */
 .skeleton {
-  @apply bg-surface-low rounded animate-pulse;
+  @apply bg-gray-100 rounded animate-pulse;
 }
 
 /* ==================== EDITORIAL SPACING ==================== */
